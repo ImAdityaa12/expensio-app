@@ -63,20 +63,17 @@ export default function RootLayout() {
     );
   }
 
-  if (!session) {
-    return (
-      <ThemeProvider value={CustomTheme}>
-        <Auth />
-        <StatusBar style="dark" />
-      </ThemeProvider>
-    );
-  }
-
   return (
     <ThemeProvider value={CustomTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Add Expense' }} />
+      <Stack screenOptions={{ headerShown: false }}>
+        {!session ? (
+          <Stack.Screen name="auth" options={{ animation: 'fade' }} />
+        ) : (
+          <>
+            <Stack.Screen name="(tabs)" options={{ animation: 'fade' }} />
+            <Stack.Screen name="modal" options={{ presentation: 'modal', headerShown: true, title: 'Add Expense' }} />
+          </>
+        )}
       </Stack>
       <StatusBar style="dark" />
     </ThemeProvider>
