@@ -1,98 +1,113 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
-
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
+import React, { useState } from 'react';
+import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import { useExpenses } from '../../hooks/use-expenses';
+import { Expense } from '../../types/expense';
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import { syncSmsExpenses } from '../../services/sms-service';
 
 export default function HomeScreen() {
-  return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+  const { expenses, loading, deleteExpense, fetchExpenses } = useExpenses();
+  const [syncing, setSyncing] = useState(false);
+  const router = useRouter();
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+  const handleSync = async () => {
+    setSyncing(true);
+    try {
+      const count = await syncSmsExpenses();
+      if (typeof count === 'number' && count > 0) {
+        Alert.alert('Sync Complete', `Added ${count} new expenses from SMS.`);
+        fetchExpenses();
+      } else {
+        Alert.alert('Sync Complete', 'No new transaction SMS found.');
+      }
+    } catch (error) {
+      Alert.alert('Sync Failed', 'Could not read SMS. Make sure you are on Android.');
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) Alert.alert('Error', error.message);
+  };
+
+  const renderExpenseItem = ({ item }: { item: Expense }) => (
+    <View className="bg-white p-4 rounded-xl mb-3 flex-row justify-between items-center shadow-sm">
+      <View className="flex-1">
+        <View className="flex-row items-center">
+          <Text className="text-lg font-bold text-gray-800">{item.merchant}</Text>
+          <View className={`ml-2 px-2 py-0.5 rounded-full ${item.source === 'sms' ? 'bg-blue-100' : 'bg-green-100'}`}>
+            <Text className={`text-xs ${item.source === 'sms' ? 'text-blue-600' : 'text-green-600'}`}>
+              {item.source.toUpperCase()}
+            </Text>
+          </View>
+        </View>
+        <Text className="text-gray-500 text-sm">{item.category} • {new Date(item.date).toLocaleDateString()}</Text>
+        {item.note && <Text className="text-gray-400 text-xs mt-1 italic">"{item.note}"</Text>}
+      </View>
+      <View className="items-end">
+        <Text className="text-lg font-bold text-red-600">₹{item.amount}</Text>
+        <TouchableOpacity onPress={() => deleteExpense(item.id)} className="mt-2">
+          <Ionicons name="trash-outline" size={20} color="#EF4444" />
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+
+  return (
+    <View className="flex-1 bg-gray-50 p-4">
+      <View className="flex-row justify-between items-center mb-6 mt-8">
+        <View className="flex-row items-center">
+          <View>
+            <Text className="text-3xl font-bold text-gray-800">Expenses</Text>
+            <Text className="text-gray-500">Track your spending</Text>
+          </View>
+          <TouchableOpacity 
+            onPress={handleLogout}
+            className="ml-4 p-2"
+          >
+            <Ionicons name="log-out-outline" size={24} color="#6B7280" />
+          </TouchableOpacity>
+        </View>
+        <View className="flex-row">
+          <TouchableOpacity 
+            onPress={handleSync}
+            disabled={syncing}
+            className="bg-gray-200 p-3 rounded-full mr-2"
+          >
+            {syncing ? (
+              <ActivityIndicator size="small" color="#4B5563" />
+            ) : (
+              <Ionicons name="sync" size={24} color="#4B5563" />
+            )}
+          </TouchableOpacity>
+          <TouchableOpacity 
+            onPress={() => router.push('/modal')}
+            className="bg-blue-600 p-3 rounded-full shadow-lg"
+          >
+            <Ionicons name="add" size={28} color="white" />
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {loading ? (
+        <ActivityIndicator size="large" color="#2563EB" className="mt-10" />
+      ) : (
+        <FlatList
+          data={expenses}
+          keyExtractor={(item) => item.id}
+          renderItem={renderExpenseItem}
+          ListEmptyComponent={
+            <View className="mt-20 items-center">
+              <Text className="text-gray-400 text-lg">No expenses yet</Text>
+              <Text className="text-gray-400">Tap the + button to add one</Text>
+            </View>
+          }
+          showsVerticalScrollIndicator={false}
+        />
+      )}
+    </View>
   );
 }
-
-const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
-  },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
-  },
-});

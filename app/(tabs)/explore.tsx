@@ -1,112 +1,64 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import React, { useMemo } from 'react';
+import { View, Text, ScrollView, Dimensions } from 'react-native';
+import { useExpenses } from '../../hooks/use-expenses';
 
-import { Collapsible } from '@/components/ui/collapsible';
-import { ExternalLink } from '@/components/external-link';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Fonts } from '@/constants/theme';
+const { width } = Dimensions.get('window');
 
-export default function TabTwoScreen() {
+export default function ExploreScreen() {
+  const { expenses } = useExpenses();
+
+  const categoryTotals = useMemo(() => {
+    const totals: { [key: string]: number } = {};
+    expenses.forEach((e) => {
+      totals[e.category] = (totals[e.category] || 0) + e.amount;
+    });
+    return Object.entries(totals).sort((a, b) => b[1] - a[1]);
+  }, [expenses]);
+
+  const totalSpent = useMemo(() => {
+    return expenses.reduce((sum, e) => sum + e.amount, 0);
+  }, [expenses]);
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#D0D0D0', dark: '#353636' }}
-      headerImage={
-        <IconSymbol
-          size={310}
-          color="#808080"
-          name="chevron.left.forwardslash.chevron.right"
-          style={styles.headerImage}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText
-          type="title"
-          style={{
-            fontFamily: Fonts.rounded,
-          }}>
-          Explore
-        </ThemedText>
-      </ThemedView>
-      <ThemedText>This app includes example code to help you get started.</ThemedText>
-      <Collapsible title="File-based routing">
-        <ThemedText>
-          This app has two screens:{' '}
-          <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> and{' '}
-          <ThemedText type="defaultSemiBold">app/(tabs)/explore.tsx</ThemedText>
-        </ThemedText>
-        <ThemedText>
-          The layout file in <ThemedText type="defaultSemiBold">app/(tabs)/_layout.tsx</ThemedText>{' '}
-          sets up the tab navigator.
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/router/introduction">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Android, iOS, and web support">
-        <ThemedText>
-          You can open this project on Android, iOS, and the web. To open the web version, press{' '}
-          <ThemedText type="defaultSemiBold">w</ThemedText> in the terminal running this project.
-        </ThemedText>
-      </Collapsible>
-      <Collapsible title="Images">
-        <ThemedText>
-          For static images, you can use the <ThemedText type="defaultSemiBold">@2x</ThemedText> and{' '}
-          <ThemedText type="defaultSemiBold">@3x</ThemedText> suffixes to provide files for
-          different screen densities
-        </ThemedText>
-        <Image
-          source={require('@/assets/images/react-logo.png')}
-          style={{ width: 100, height: 100, alignSelf: 'center' }}
-        />
-        <ExternalLink href="https://reactnative.dev/docs/images">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Light and dark mode components">
-        <ThemedText>
-          This template has light and dark mode support. The{' '}
-          <ThemedText type="defaultSemiBold">useColorScheme()</ThemedText> hook lets you inspect
-          what the user&apos;s current color scheme is, and so you can adjust UI colors accordingly.
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/develop/user-interface/color-themes/">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Animations">
-        <ThemedText>
-          This template includes an example of an animated component. The{' '}
-          <ThemedText type="defaultSemiBold">components/HelloWave.tsx</ThemedText> component uses
-          the powerful{' '}
-          <ThemedText type="defaultSemiBold" style={{ fontFamily: Fonts.mono }}>
-            react-native-reanimated
-          </ThemedText>{' '}
-          library to create a waving hand animation.
-        </ThemedText>
-        {Platform.select({
-          ios: (
-            <ThemedText>
-              The <ThemedText type="defaultSemiBold">components/ParallaxScrollView.tsx</ThemedText>{' '}
-              component provides a parallax effect for the header image.
-            </ThemedText>
-          ),
-        })}
-      </Collapsible>
-    </ParallaxScrollView>
+    <ScrollView className="flex-1 bg-gray-50 p-4">
+      <View className="mt-8 mb-6">
+        <Text className="text-3xl font-bold text-gray-800">Analytics</Text>
+        <Text className="text-gray-500">Your spending patterns</Text>
+      </View>
+
+      <View className="bg-blue-600 p-6 rounded-3xl mb-6 shadow-md">
+        <Text className="text-blue-100 text-lg">Total Spent</Text>
+        <Text className="text-white text-4xl font-bold mt-1">₹{totalSpent.toFixed(2)}</Text>
+      </View>
+
+      <Text className="text-xl font-bold text-gray-800 mb-4">By Category</Text>
+      
+      {categoryTotals.length > 0 ? (
+        categoryTotals.map(([category, amount]) => {
+          const percentage = (amount / totalSpent) * 100;
+          return (
+            <View key={category} className="mb-4 bg-white p-4 rounded-2xl shadow-sm">
+              <View className="flex-row justify-between mb-2">
+                <Text className="font-semibold text-gray-700">{category}</Text>
+                <Text className="font-bold text-gray-900">₹{amount.toFixed(2)}</Text>
+              </View>
+              <View className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                <View 
+                  className="h-full bg-blue-500" 
+                  style={{ width: `${percentage}%` }} 
+                />
+              </View>
+              <Text className="text-xs text-gray-400 mt-1">{percentage.toFixed(1)}% of total</Text>
+            </View>
+          );
+        })
+      ) : (
+        <View className="mt-10 items-center">
+          <Text className="text-gray-400">Add expenses to see analytics</Text>
+        </View>
+      )}
+
+      <View className="h-10" />
+    </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  headerImage: {
-    color: '#808080',
-    bottom: -90,
-    left: -35,
-    position: 'absolute',
-  },
-  titleContainer: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-});

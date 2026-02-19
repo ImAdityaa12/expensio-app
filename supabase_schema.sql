@@ -1,0 +1,32 @@
+-- Create expenses table
+create table public.expenses (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references auth.users not null,
+  amount decimal not null,
+  merchant text not null,
+  category text not null,
+  date timestamp with time zone default now() not null,
+  source text check (source in ('sms', 'manual')) not null,
+  note text,
+  created_at timestamp with time zone default now() not null
+);
+
+-- Enable RLS
+alter table public.expenses enable row level security;
+
+-- Create policies
+create policy "Users can view their own expenses"
+  on public.expenses for select
+  using ( auth.uid() = user_id );
+
+create policy "Users can insert their own expenses"
+  on public.expenses for insert
+  with check ( auth.uid() = user_id );
+
+create policy "Users can update their own expenses"
+  on public.expenses for update
+  using ( auth.uid() = user_id );
+
+create policy "Users can delete their own expenses"
+  on public.expenses for delete
+  using ( auth.uid() = user_id );
