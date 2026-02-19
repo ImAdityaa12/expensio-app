@@ -1,13 +1,17 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, ScrollView, Dimensions, TouchableOpacity, SafeAreaView } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useExpenses } from '../../hooks/use-expenses';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 
 export default function StatsScreen() {
-  const { expenses } = useExpenses();
+  const { expenses, loading } = useExpenses();
   const [activeTab, setActiveTab] = useState('Weekly');
+  const insets = useSafeAreaInsets();
 
   const categoryTotals = useMemo(() => {
+    if (!expenses || expenses.length === 0) return [];
     const totals: { [key: string]: number } = {};
     expenses.forEach((e) => {
       totals[e.category] = (totals[e.category] || 0) + e.amount;
@@ -21,80 +25,124 @@ export default function StatsScreen() {
 
   const TABS = ['Daily', 'Weekly', 'Monthly'];
 
+  if (loading) {
+    return (
+      <View className="flex-1 items-center justify-center bg-background">
+        <ActivityIndicator size="large" color="#42224A" />
+      </View>
+    );
+  }
+
   return (
-    <SafeAreaView className="flex-1 bg-background">
-      <ScrollView className="flex-1 px-5 pt-4">
-        <View className="flex-row justify-between items-center mb-8">
+    <View style={{ flex: 1, backgroundColor: '#F7F4F7', paddingTop: insets.top }}>
+      <ScrollView className="flex-1 px-5 pt-4" showsVerticalScrollIndicator={false}>
+        <Animated.View 
+          entering={FadeInDown.delay(100).duration(600)}
+          className="flex-row justify-between items-center mb-8"
+        >
           <Text className="text-2xl font-poppins-bold text-dark">Statistics</Text>
-          <TouchableOpacity className="w-10 h-10 rounded-full bg-white items-center justify-center shadow-sm">
-            <Ionicons name="ellipsis-horizontal" size={20} color="#42224A" />
+          <TouchableOpacity className="w-11 h-11 rounded-full bg-white items-center justify-center shadow-sm" style={{ elevation: 2 }}>
+            <Ionicons name="ellipsis-horizontal" size={22} color="#42224A" />
           </TouchableOpacity>
-        </View>
+        </Animated.View>
 
         {/* Big Amount */}
-        <View className="items-center mb-8">
-          <Text className="font-poppins text-gray-400 mb-1">Total Balance</Text>
+        <Animated.View 
+          entering={FadeInDown.delay(200).duration(600)}
+          className="items-center mb-8"
+        >
+          <Text className="font-poppins text-gray-400 mb-1">Total Spent</Text>
           <Text className="font-poppins-bold text-4xl text-dark">
             ${totalSpent.toLocaleString(undefined, { minimumFractionDigits: 2 })}
           </Text>
-          <Text className="font-poppins-light text-xs text-gray-400 mt-2">
-            Tax included • Feb 2026
-          </Text>
-        </View>
+          <View className="flex-row items-center mt-2 px-3 py-1 bg-white rounded-full shadow-sm">
+            <View className="w-2 h-2 rounded-full bg-green-500 mr-2" />
+            <Text className="font-poppins-medium text-[10px] text-gray-500 uppercase tracking-wider">
+              Feb 2026 • Period: {activeTab}
+            </Text>
+          </View>
+        </Animated.View>
 
         {/* Category Tabs */}
-        <View className="flex-row bg-gray-200/50 rounded-3xl p-1.5 mb-8">
+        <Animated.View 
+          entering={FadeInDown.delay(300).duration(600)}
+          className="flex-row bg-white/50 rounded-3xl p-1.5 mb-8 border border-white"
+        >
           {TABS.map((tab) => (
             <TouchableOpacity
               key={tab}
               onPress={() => setActiveTab(tab)}
-              className={`flex-1 py-3 rounded-2xl ${activeTab === tab ? 'bg-primary shadow-sm' : ''}`}
+              className={`flex-1 py-3 rounded-2xl ${activeTab === tab ? 'bg-primary shadow-md' : ''}`}
             >
-              <Text className={`text-center font-poppins-medium text-sm ${activeTab === tab ? 'text-white' : 'text-gray-500'}`}>
+              <Text className={`text-center font-poppins-semibold text-sm ${activeTab === tab ? 'text-white' : 'text-gray-500'}`}>
                 {tab}
               </Text>
             </TouchableOpacity>
           ))}
-        </View>
+        </Animated.View>
 
-        {/* Legend / Breakdown */}
-        <Text className="text-lg font-poppins-semibold text-dark mb-4">By Category</Text>
-        
-        {categoryTotals.length > 0 ? (
-          categoryTotals.map(([category, amount]) => {
-            const percentage = (amount / totalSpent) * 100;
-            return (
-              <View key={category} className="mb-4 bg-white p-4 rounded-3xl shadow-sm border border-gray-50">
-                <View className="flex-row justify-between items-center mb-2">
-                  <View className="flex-row items-center">
-                    <View className="w-2 h-2 rounded-full bg-accent mr-2" />
-                    <Text className="font-poppins-medium text-dark">{category}</Text>
+        {/* Breakdown */}
+        <Animated.View entering={FadeInDown.delay(400).duration(600)}>
+          <Text className="text-lg font-poppins-semibold text-dark mb-4">By Category</Text>
+          
+          {categoryTotals.length > 0 ? (
+            categoryTotals.map(([category, amount], index) => {
+              const percentage = totalSpent > 0 ? (amount / totalSpent) * 100 : 0;
+              return (
+                <Animated.View 
+                  key={category} 
+                  entering={FadeInDown.delay(500 + index * 100).duration(500)}
+                  className="mb-4 bg-white p-5 rounded-3xl shadow-sm border border-gray-50"
+                  style={{ elevation: 1 }}
+                >
+                  <View className="flex-row justify-between items-center mb-3">
+                    <View className="flex-row items-center">
+                      <View className={`w-10 h-10 rounded-2xl bg-primary/5 items-center justify-center mr-3`}>
+                         <Ionicons name={getCategoryIcon(category)} size={20} color="#42224A" />
+                      </View>
+                      <View>
+                        <Text className="font-poppins-semibold text-dark capitalize">{category}</Text>
+                        <Text className="text-[10px] font-poppins text-gray-400">Spending share</Text>
+                      </View>
+                    </View>
+                    <View className="items-end">
+                      <Text className="font-poppins-bold text-dark">
+                        ${amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                      </Text>
+                      <Text className="text-[10px] font-poppins-medium text-primary">{percentage.toFixed(1)}%</Text>
+                    </View>
                   </View>
-                  <Text className="font-poppins-bold text-dark">
-                    ${amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                  </Text>
-                </View>
-                <View className="h-1.5 bg-background rounded-full overflow-hidden">
-                  <View 
-                    className="h-full bg-primary" 
-                    style={{ width: `${percentage}%` }} 
-                  />
-                </View>
-                <View className="flex-row justify-between mt-1.5">
-                  <Text className="text-[10px] font-poppins text-gray-400">Spending share</Text>
-                  <Text className="text-[10px] font-poppins-medium text-primary">{percentage.toFixed(1)}%</Text>
-                </View>
-              </View>
-            );
-          })
-        ) : (
-          <View className="mt-10 items-center">
-            <Text className="font-poppins text-gray-400">No data available for this period</Text>
-          </View>
-        )}
+                  <View className="h-2 bg-background rounded-full overflow-hidden">
+                    <Animated.View 
+                      entering={FadeIn.delay(800 + index * 100).duration(1000)}
+                      className="h-full bg-primary" 
+                      style={{ width: `${percentage}%` }} 
+                    />
+                  </View>
+                </Animated.View>
+              );
+            })
+          ) : (
+            <View className="mt-10 items-center">
+              <Ionicons name="pie-chart-outline" size={48} color="#D1D5DB" />
+              <Text className="font-poppins text-gray-400 mt-4">No data available for this period</Text>
+            </View>
+          )}
+        </Animated.View>
 
-        <View className="h-24" />
+        <View className="h-32" />
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
+
+const getCategoryIcon = (category: string) => {
+  switch (category.toLowerCase()) {
+    case 'food': return 'restaurant';
+    case 'transport': return 'car';
+    case 'shopping': return 'cart';
+    case 'bills': return 'receipt';
+    case 'entertainment': return 'play';
+    default: return 'apps';
+  }
+};
