@@ -1,11 +1,18 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useExpenses } from '../hooks/use-expenses';
 import { NewExpense } from '../types/expense';
 import { Ionicons } from '@expo/vector-icons';
 
-const CATEGORIES = ['Food', 'Transport', 'Shopping', 'Bills', 'Entertainment', 'Others'];
+const CATEGORIES = [
+  { name: 'Food', icon: 'restaurant-outline' },
+  { name: 'Transport', icon: 'car-outline' },
+  { name: 'Shopping', icon: 'cart-outline' },
+  { name: 'Bills', icon: 'receipt-outline' },
+  { name: 'Entertainment', icon: 'play-outline' },
+  { name: 'Others', icon: 'apps-outline' },
+];
 
 export default function ModalScreen() {
   const router = useRouter();
@@ -41,69 +48,101 @@ export default function ModalScreen() {
   };
 
   return (
-    <ScrollView className="flex-1 bg-white p-6">
-      <Text className="text-2xl font-bold text-gray-800 mb-6">Add Expense</Text>
-
-      <View className="space-y-4">
-        <View>
-          <Text className="text-gray-700 mb-2 font-medium">Amount (₹)</Text>
-          <TextInput
-            keyboardType="numeric"
-            value={amount}
-            onChangeText={setAmount}
-            placeholder="0.00"
-            className="border border-gray-300 rounded-lg p-4 text-xl font-bold text-gray-800"
-          />
+    <KeyboardAvoidingView 
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      className="flex-1 bg-white"
+    >
+      <ScrollView className="flex-1 px-6 pt-6">
+        <View className="flex-row justify-between items-center mb-8">
+          <Text className="text-2xl font-poppins-bold text-dark">Add Expense</Text>
+          <TouchableOpacity onPress={() => router.back()}>
+            <Ionicons name="close" size={28} color="#42224A" />
+          </TouchableOpacity>
         </View>
 
-        <View className="mt-4">
-          <Text className="text-gray-700 mb-2 font-medium">Merchant / Description</Text>
-          <TextInput
-            value={merchant}
-            onChangeText={setMerchant}
-            placeholder="Where did you spend?"
-            className="border border-gray-300 rounded-lg p-4 text-gray-800"
-          />
-        </View>
+        <View className="space-y-6">
+          <View>
+            <Text className="text-gray-400 mb-2 font-poppins-medium text-xs uppercase tracking-widest">Amount</Text>
+            <View className="flex-row items-center border-b border-gray-100 pb-2">
+              <Text className="text-3xl font-poppins-bold text-dark mr-2">$</Text>
+              <TextInput
+                keyboardType="numeric"
+                value={amount}
+                onChangeText={setAmount}
+                placeholder="0.00"
+                placeholderTextColor="#D1D5DB"
+                className="flex-1 text-4xl font-poppins-bold text-dark"
+                autoFocus
+              />
+            </View>
+          </View>
 
-        <View className="mt-4">
-          <Text className="text-gray-700 mb-2 font-medium">Category</Text>
-          <View className="flex-row flex-wrap gap-2">
-            {CATEGORIES.map((cat) => (
-              <TouchableOpacity
-                key={cat}
-                onPress={() => setCategory(cat)}
-                className={`px-4 py-2 rounded-full border ${
-                  category === cat ? 'bg-blue-600 border-blue-600' : 'bg-white border-gray-300'
-                }`}
-              >
-                <Text className={category === cat ? 'text-white' : 'text-gray-600'}>{cat}</Text>
-              </TouchableOpacity>
-            ))}
+          <View className="mt-8">
+            <Text className="text-gray-400 mb-4 font-poppins-medium text-xs uppercase tracking-widest">Category</Text>
+            <View className="flex-row flex-wrap gap-3">
+              {CATEGORIES.map((cat) => (
+                <TouchableOpacity
+                  key={cat.name}
+                  onPress={() => setCategory(cat.name)}
+                  className={`flex-row items-center px-4 py-2 rounded-2xl border ${
+                    category === cat.name ? 'bg-primary border-primary' : 'bg-white border-gray-100'
+                  }`}
+                >
+                  <Ionicons 
+                    name={cat.icon as any} 
+                    size={16} 
+                    color={category === cat.name ? 'white' : '#42224A'} 
+                    style={{ marginRight: 6 }}
+                  />
+                  <Text className={`font-poppins-medium text-sm ${category === cat.name ? 'text-white' : 'text-gray-600'}`}>
+                    {cat.name}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+
+          <View className="mt-8">
+            <Text className="text-gray-400 mb-2 font-poppins-medium text-xs uppercase tracking-widest">Merchant</Text>
+            <TextInput
+              value={merchant}
+              onChangeText={setMerchant}
+              placeholder="e.g. Starbucks, Amazon"
+              placeholderTextColor="#D1D5DB"
+              className="bg-background rounded-2xl p-4 font-poppins text-dark"
+            />
+          </View>
+
+          <View className="mt-6 mb-10">
+            <Text className="text-gray-400 mb-2 font-poppins-medium text-xs uppercase tracking-widest">Note (Optional)</Text>
+            <TextInput
+              value={note}
+              onChangeText={setNote}
+              placeholder="What was this for?"
+              placeholderTextColor="#D1D5DB"
+              multiline
+              numberOfLines={3}
+              className="bg-background rounded-2xl p-4 font-poppins text-dark h-24"
+              textAlignVertical="top"
+            />
           </View>
         </View>
 
-        <View className="mt-4">
-          <Text className="text-gray-700 mb-2 font-medium">Note (Optional)</Text>
-          <TextInput
-            value={note}
-            onChangeText={setNote}
-            placeholder="Add a note..."
-            multiline
-            numberOfLines={3}
-            className="border border-gray-300 rounded-lg p-4 text-gray-800 h-24"
-            textAlignVertical="top"
-          />
-        </View>
-      </View>
-
-      <TouchableOpacity
-        onPress={handleSave}
-        disabled={loading}
-        className="bg-blue-600 p-4 rounded-xl items-center mt-10 mb-10 shadow-lg"
-      >
-        <Text className="text-white font-bold text-lg">{loading ? 'Saving...' : 'Save Expense'}</Text>
-      </TouchableOpacity>
-    </ScrollView>
+        <TouchableOpacity
+          onPress={handleSave}
+          disabled={loading}
+          className="bg-primary p-5 rounded-3xl items-center shadow-lg mb-10"
+          style={{
+            shadowColor: "#42224A",
+            shadowOffset: { width: 0, height: 10 },
+            shadowOpacity: 0.2,
+            shadowRadius: 20,
+            elevation: 8,
+          }}
+        >
+          <Text className="text-white font-poppins-bold text-lg">{loading ? 'Saving...' : 'Save Expense'}</Text>
+        </TouchableOpacity>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }

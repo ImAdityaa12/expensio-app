@@ -1,15 +1,28 @@
-import React, { useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, Alert, SafeAreaView, TextInput } from 'react-native';
 import { useExpenses } from '../../hooks/use-expenses';
-import { Expense } from '../../types/expense';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { syncSmsExpenses } from '../../services/sms-service';
+import { SummaryCard } from '../../components/SummaryCard';
+import { ExpenseItem } from '../../components/ExpenseItem';
+import { supabase } from '../../lib/supabase';
 
 export default function HomeScreen() {
   const { expenses, loading, deleteExpense, fetchExpenses } = useExpenses();
   const [syncing, setSyncing] = useState(false);
+  const [userName, setUserName] = useState('User');
   const router = useRouter();
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user?.email) {
+        setUserName(user.email.split('@')[0]);
+      }
+    });
+  }, []);
+
+  const totalSpent = expenses.reduce((sum, e) => sum + e.amount, 0);
 
   const handleSync = async () => {
     setSyncing(true);
@@ -33,81 +46,61 @@ export default function HomeScreen() {
     if (error) Alert.alert('Error', error.message);
   };
 
-  const renderExpenseItem = ({ item }: { item: Expense }) => (
-    <View className="bg-white p-4 rounded-xl mb-3 flex-row justify-between items-center shadow-sm">
-      <View className="flex-1">
-        <View className="flex-row items-center">
-          <Text className="text-lg font-bold text-gray-800">{item.merchant}</Text>
-          <View className={`ml-2 px-2 py-0.5 rounded-full ${item.source === 'sms' ? 'bg-blue-100' : 'bg-green-100'}`}>
-            <Text className={`text-xs ${item.source === 'sms' ? 'text-blue-600' : 'text-green-600'}`}>
-              {item.source.toUpperCase()}
-            </Text>
-          </View>
-        </View>
-        <Text className="text-gray-500 text-sm">{item.category} • {new Date(item.date).toLocaleDateString()}</Text>
-        {item.note && <Text className="text-gray-400 text-xs mt-1 italic">"{item.note}"</Text>}
-      </View>
-      <View className="items-end">
-        <Text className="text-lg font-bold text-red-600">₹{item.amount}</Text>
-        <TouchableOpacity onPress={() => deleteExpense(item.id)} className="mt-2">
-          <Ionicons name="trash-outline" size={20} color="#EF4444" />
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
-
   return (
-    <View className="flex-1 bg-gray-50 p-4">
-      <View className="flex-row justify-between items-center mb-6 mt-8">
-        <View className="flex-row items-center">
+    <SafeAreaView className="flex-1 bg-background">
+      <View className="px-5 pt-4">
+        {/* Header */}
+        <View className="flex-row justify-between items-center mb-6">
           <View>
-            <Text className="text-3xl font-bold text-gray-800">Expenses</Text>
-            <Text className="text-gray-500">Track your spending</Text>
+            <Text className="font-poppins text-gray-500 text-lg">Hello,</Text>
+            <Text className="font-poppins-bold text-2xl text-dark">{userName}</Text>
           </View>
-          <TouchableOpacity 
-            onPress={handleLogout}
-            className="ml-4 p-2"
-          >
-            <Ionicons name="log-out-outline" size={24} color="#6B7280" />
-          </TouchableOpacity>
+          <View className="flex-row items-center">
+             <TouchableOpacity 
+              onPress={handleSync}
+              className="w-10 h-10 rounded-full bg-white items-center justify-center mr-3 shadow-sm"
+            >
+              <Ionicons name="sync" size={20} color="#42224A" />
+            </TouchableOpacity>
+            <TouchableOpacity className="w-10 h-10 rounded-full bg-white items-center justify-center shadow-sm">
+              <Ionicons name="search" size={20} color="#42224A" />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={handleLogout} className="ml-3">
+               <Ionicons name="log-out-outline" size={24} color="#EF8767" />
+            </TouchableOpacity>
+          </View>
         </View>
-        <View className="flex-row">
-          <TouchableOpacity 
-            onPress={handleSync}
-            disabled={syncing}
-            className="bg-gray-200 p-3 rounded-full mr-2"
-          >
-            {syncing ? (
-              <ActivityIndicator size="small" color="#4B5563" />
-            ) : (
-              <Ionicons name="sync" size={24} color="#4B5563" />
-            )}
-          </TouchableOpacity>
-          <TouchableOpacity 
-            onPress={() => router.push('/modal')}
-            className="bg-blue-600 p-3 rounded-full shadow-lg"
-          >
-            <Ionicons name="add" size={28} color="white" />
+
+        {/* Summary Card */}
+        <SummaryCard amount={totalSpent} />
+
+        {/* Section Title */}
+        <View className="flex-row justify-between items-center mb-4 mt-2">
+          <Text className="font-poppins-semibold text-lg text-dark">Today</Text>
+          <TouchableOpacity>
+            <Text className="font-poppins text-xs text-primary-soft">View All</Text>
           </TouchableOpacity>
         </View>
       </View>
 
       {loading ? (
-        <ActivityIndicator size="large" color="#2563EB" className="mt-10" />
+        <ActivityIndicator size="large" color="#42224A" className="mt-10" />
       ) : (
         <FlatList
           data={expenses}
           keyExtractor={(item) => item.id}
-          renderItem={renderExpenseItem}
+          renderItem={({ item }) => (
+            <ExpenseItem item={item} onDelete={deleteExpense} />
+          )}
+          contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 100 }}
           ListEmptyComponent={
             <View className="mt-20 items-center">
-              <Text className="text-gray-400 text-lg">No expenses yet</Text>
-              <Text className="text-gray-400">Tap the + button to add one</Text>
+              <Text className="font-poppins text-gray-400 text-lg">No expenses yet</Text>
             </View>
           }
           showsVerticalScrollIndicator={false}
         />
       )}
-    </View>
+    </SafeAreaView>
   );
 }

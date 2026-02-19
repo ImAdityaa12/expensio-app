@@ -8,6 +8,14 @@ import { supabase } from '../lib/supabase';
 import { Session } from '@supabase/supabase-js';
 import Auth from '../components/Auth';
 import { View, ActivityIndicator } from 'react-native';
+import { 
+  useFonts, 
+  Poppins_300Light, 
+  Poppins_400Regular, 
+  Poppins_500Medium, 
+  Poppins_600SemiBold, 
+  Poppins_700Bold 
+} from '@expo-google-fonts/poppins';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
@@ -15,10 +23,26 @@ export const unstable_settings = {
   anchor: '(tabs)',
 };
 
+const CustomTheme = {
+  ...DefaultTheme,
+  colors: {
+    ...DefaultTheme.colors,
+    background: '#F7F4F7',
+  },
+};
+
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+
+  let [fontsLoaded] = useFonts({
+    Poppins_300Light,
+    Poppins_400Regular,
+    Poppins_500Medium,
+    Poppins_600SemiBold,
+    Poppins_700Bold,
+  });
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -31,30 +55,30 @@ export default function RootLayout() {
     });
   }, []);
 
-  if (loading) {
+  if (!fontsLoaded || loading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" color="#0000ff" />
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F7F4F7' }}>
+        <ActivityIndicator size="large" color="#42224A" />
       </View>
     );
   }
 
   if (!session) {
     return (
-      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+      <ThemeProvider value={CustomTheme}>
         <Auth />
-        <StatusBar style="auto" />
+        <StatusBar style="dark" />
       </ThemeProvider>
     );
   }
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+    <ThemeProvider value={CustomTheme}>
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
+        <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Add Expense' }} />
       </Stack>
-      <StatusBar style="auto" />
+      <StatusBar style="dark" />
     </ThemeProvider>
   );
 }
