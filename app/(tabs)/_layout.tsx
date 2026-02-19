@@ -17,24 +17,22 @@ export default function TabLayout() {
           tabBarInactiveTintColor: '#9CA3AF',
           headerShown: false,
           tabBarStyle: {
-            position: 'absolute',
-            bottom: insets.bottom > 0 ? insets.bottom : 20,
-            left: 20,
-            right: 20,
-            elevation: 0,
-            backgroundColor: 'rgba(255, 255, 255, 0.95)',
-            borderRadius: 30,
-            height: 64,
-            borderTopWidth: 0,
+            backgroundColor: '#ffffff',
+            height: 64 + (insets.bottom > 0 ? insets.bottom - 10 : 0),
+            paddingBottom: insets.bottom > 0 ? insets.bottom : 10,
+            paddingTop: 10,
+            borderTopWidth: 1,
+            borderTopColor: '#F3F4F6',
+            elevation: 20,
             shadowColor: '#000',
-            shadowOffset: { width: 0, height: 10 },
-            shadowOpacity: 0.1,
-            shadowRadius: 15,
+            shadowOffset: { width: 0, height: -4 },
+            shadowOpacity: 0.05,
+            shadowRadius: 8,
           },
           tabBarLabelStyle: {
             fontFamily: 'Poppins_500Medium',
             fontSize: 10,
-            marginBottom: 8,
+            marginTop: 2,
           },
         }}>
         <Tabs.Screen
@@ -42,7 +40,7 @@ export default function TabLayout() {
           options={{
             title: 'Home',
             tabBarIcon: ({ color, focused }) => (
-              <Ionicons size={22} name={focused ? "home" : "home-outline"} color={color} style={{ marginTop: 8 }} />
+              <Ionicons size={22} name={focused ? "home" : "home-outline"} color={color} />
             ),
           }}
         />
@@ -51,7 +49,7 @@ export default function TabLayout() {
           options={{
             title: 'Receipts',
             tabBarIcon: ({ color, focused }) => (
-              <Ionicons size={22} name={focused ? "receipt" : "receipt-outline"} color={color} style={{ marginTop: 8 }} />
+              <Ionicons size={22} name={focused ? "receipt" : "receipt-outline"} color={color} />
             ),
           }}
         />
@@ -71,7 +69,7 @@ export default function TabLayout() {
           options={{
             title: 'Stats',
             tabBarIcon: ({ color, focused }) => (
-              <Ionicons size={22} name={focused ? "bar-chart" : "bar-chart-outline"} color={color} style={{ marginTop: 8 }} />
+              <Ionicons size={22} name={focused ? "bar-chart" : "bar-chart-outline"} color={color} />
             ),
           }}
         />
@@ -80,7 +78,7 @@ export default function TabLayout() {
           options={{
             title: 'Profile',
             tabBarIcon: ({ color, focused }) => (
-              <Ionicons size={22} name={focused ? "person" : "person-outline"} color={color} style={{ marginTop: 8 }} />
+              <Ionicons size={22} name={focused ? "person" : "person-outline"} color={color} />
             ),
           }}
         />
@@ -111,30 +109,31 @@ function AddButton({ onPress }: { onPress: () => void }) {
       onPressOut={handlePressOut}
       onPress={onPress}
       style={{
-        top: -24,
+        top: -15,
         justifyContent: 'center',
         alignItems: 'center',
+        height: 60,
       }}
     >
       <Animated.View
         style={[
           {
-            width: 56,
-            height: 56,
-            borderRadius: 28,
+            width: 54,
+            height: 54,
+            borderRadius: 18,
             backgroundColor: '#EF8767',
             justifyContent: 'center',
             alignItems: 'center',
             shadowColor: '#EF8767',
-            shadowOffset: { width: 0, height: 8 },
-            shadowOpacity: 0.4,
-            shadowRadius: 12,
+            shadowOffset: { width: 0, height: 6 },
+            shadowOpacity: 0.3,
+            shadowRadius: 10,
             elevation: 8,
           },
           animatedStyle,
         ]}
       >
-        <Ionicons name="add" size={32} color="white" />
+        <Ionicons name="add" size={30} color="white" />
       </Animated.View>
     </TouchableOpacity>
   );

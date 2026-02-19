@@ -71,7 +71,7 @@ export default function RootLayout() {
         ) : (
           <>
             <Stack.Screen name="(tabs)" options={{ animation: 'fade' }} />
-            <Stack.Screen name="modal" options={{ presentation: 'modal', headerShown: true, title: 'Add Expense' }} />
+            <Stack.Screen name="modal" options={{ presentation: 'fullScreenModal', headerShown: false }} />
           </>
         )}
       </Stack>
