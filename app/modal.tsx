@@ -1,109 +1,177 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, Alert, ActivityIndicator, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useExpenses } from '../hooks/use-expenses';
 import { NewExpense } from '../types/expense';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Animated, { FadeInDown } from 'react-native-reanimated';
+import * as Haptics from 'expo-haptics';
+import { NumericKeypad } from '../components/NumericKeypad';
 
-const CATEGORIES = ['Food', 'Transport', 'Shopping', 'Bills', 'Entertainment', 'Others'];
+const CATEGORIES = [
+  { name: 'Food', icon: 'restaurant' },
+  { name: 'Transport', icon: 'car' },
+  { name: 'Shopping', icon: 'cart' },
+  { name: 'Bills', icon: 'receipt' },
+  { name: 'Entertainment', icon: 'play' },
+  { name: 'Others', icon: 'apps' },
+];
 
 export default function ModalScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { addExpense } = useExpenses();
-  const [amount, setAmount] = useState('');
-  const [merchant, setMerchant] = useState('');
+  const [amount, setAmount] = useState('0');
   const [category, setCategory] = useState('Others');
-  const [note, setNote] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('Cash');
   const [loading, setLoading] = useState(false);
 
+  const handleKeyPress = (val: string) => {
+    setAmount(prev => {
+      if (prev === '0' && val !== '.') return val;
+      if (val === '.' && prev.includes('.')) return prev;
+      if (prev.includes('.') && prev.split('.')[1].length >= 2) return prev;
+      return prev + val;
+    });
+  };
+
+  const handleDelete = () => {
+    setAmount(prev => (prev.length === 1 ? '0' : prev.slice(0, -1)));
+  };
+
   const handleSave = async () => {
-    if (!amount || !merchant) {
-      Alert.alert('Error', 'Please fill in all required fields');
+    const numAmount = parseFloat(amount);
+    if (numAmount <= 0) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
       return;
     }
 
     setLoading(true);
     const newExpense: NewExpense = {
-      amount: parseFloat(amount),
-      merchant,
+      amount: numAmount,
+      merchant: 'Quick Entry',
       category,
-      note,
+      note: '',
       date: new Date().toISOString(),
       source: 'manual',
+      payment_method: paymentMethod,
     };
 
     const result = await addExpense(newExpense);
     setLoading(false);
 
     if (result) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       router.back();
     }
   };
 
   return (
-    <ScrollView className="flex-1 bg-white p-6">
-      <Text className="text-2xl font-bold text-gray-800 mb-6">Add Expense</Text>
+    <View style={{ flex: 1, backgroundColor: '#F5F6FA' }}>
+      {/* Compact Header */}
+      <View 
+        style={{ paddingTop: insets.top, height: insets.top + 56 }} 
+        className="px-lg flex-row justify-between items-center"
+      >
+        <TouchableOpacity 
+          onPress={() => router.back()}
+          className="w-9 h-9 rounded-full items-center justify-center bg-white shadow-sm"
+        >
+          <Ionicons name="close" size={18} color="#1E1E1E" />
+        </TouchableOpacity>
+        <Text className="text-text-dark font-bold text-[16px]">New Expense</Text>
+        <View className="w-9" />
+      </View>
 
-      <View className="space-y-4">
-        <View>
-          <Text className="text-gray-700 mb-2 font-medium">Amount (₹)</Text>
-          <TextInput
-            keyboardType="numeric"
-            value={amount}
-            onChangeText={setAmount}
-            placeholder="0.00"
-            className="border border-gray-300 rounded-lg p-4 text-xl font-bold text-gray-800"
-          />
+      <ScrollView 
+        className="flex-1" 
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 16 }}
+      >
+        {/* Compact Amount Section */}
+        <View className="items-center justify-center pt-md pb-xs">
+          <Text className="text-text-grey font-medium text-[10px] uppercase tracking-[3px] mb-xs">Amount</Text>
+          <View className="flex-row items-center">
+            <Text className="text-primary font-bold text-[28px] mt-1 mr-xs">$</Text>
+            <Text style={{ fontSize: 60 }} className="text-text-dark font-bold tracking-tighter">
+              {amount}
+            </Text>
+            <Animated.View entering={FadeInDown} className="w-[3px] h-10 bg-primary ml-1 rounded-full" />
+          </View>
         </View>
 
-        <View className="mt-4">
-          <Text className="text-gray-700 mb-2 font-medium">Merchant / Description</Text>
-          <TextInput
-            value={merchant}
-            onChangeText={setMerchant}
-            placeholder="Where did you spend?"
-            className="border border-gray-300 rounded-lg p-4 text-gray-800"
-          />
+        {/* Category Grid */}
+        <View className="px-lg mb-md">
+          <Text className="text-text-grey font-semibold text-[11px] uppercase tracking-widest mb-sm">Category</Text>
+          <View className="flex-row flex-wrap justify-between">
+            {CATEGORIES.map((cat) => {
+              const isActive = category === cat.name;
+              return (
+                <TouchableOpacity
+                  key={cat.name}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setCategory(cat.name);
+                  }}
+                  style={{ width: '31.5%', marginBottom: 10 }}
+                  className={`aspect-[1.1] rounded-xl items-center justify-center border transition-all duration-200 ${
+                    isActive ? 'border-primary bg-primary/10' : 'border-gray-200 bg-white'
+                  }`}
+                >
+                  <Ionicons name={cat.icon as any} size={26} color={isActive ? '#4B2E83' : '#8A8A8A'} />
+                  <Text className={`text-[10px] uppercase font-bold mt-1.5 ${isActive ? 'text-primary' : 'text-text-grey'}`}>
+                    {cat.name}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
         </View>
 
-        <View className="mt-4">
-          <Text className="text-gray-700 mb-2 font-medium">Category</Text>
-          <View className="flex-row flex-wrap gap-2">
-            {CATEGORIES.map((cat) => (
+        {/* Payment Method */}
+        <View className="px-lg mb-md">
+          <Text className="text-text-grey font-semibold text-[11px] uppercase tracking-widest mb-sm">Payment Method</Text>
+          <View className="flex-row gap-3">
+            {['Cash', 'Card'].map((method) => (
               <TouchableOpacity
-                key={cat}
-                onPress={() => setCategory(cat)}
-                className={`px-4 py-2 rounded-full border ${
-                  category === cat ? 'bg-blue-600 border-blue-600' : 'bg-white border-gray-300'
+                key={method}
+                onPress={() => setPaymentMethod(method)}
+                className={`flex-1 py-3 rounded-xl border items-center ${
+                  paymentMethod === method ? 'border-primary bg-primary/10' : 'border-gray-200 bg-white'
                 }`}
               >
-                <Text className={category === cat ? 'text-white' : 'text-gray-600'}>{cat}</Text>
+                <Text className={`font-bold ${paymentMethod === method ? 'text-primary' : 'text-text-grey'}`}>
+                  {method}
+                </Text>
               </TouchableOpacity>
             ))}
           </View>
         </View>
+      </ScrollView>
 
-        <View className="mt-4">
-          <Text className="text-gray-700 mb-2 font-medium">Note (Optional)</Text>
-          <TextInput
-            value={note}
-            onChangeText={setNote}
-            placeholder="Add a note..."
-            multiline
-            numberOfLines={3}
-            className="border border-gray-300 rounded-lg p-4 text-gray-800 h-24"
-            textAlignVertical="top"
-          />
+      {/* Docked Keypad & Save */}
+      <View className="bg-white border-t border-gray-100 rounded-t-3xl shadow-lg">
+        <NumericKeypad onPress={handleKeyPress} onDelete={handleDelete} />
+        
+        <View 
+          className="px-lg pb-sm pt-xs flex-row justify-end"
+          style={{ paddingBottom: Math.max(insets.bottom, 12) }}
+        >
+          <TouchableOpacity
+            onPress={handleSave}
+            disabled={loading}
+            activeOpacity={0.8}
+            className="bg-primary px-8 py-4 rounded-2xl shadow-lg"
+          >
+            {loading ? (
+              <ActivityIndicator color="white" />
+            ) : (
+              <Text className="text-white font-bold text-[16px]">Save</Text>
+            )}
+          </TouchableOpacity>
         </View>
       </View>
-
-      <TouchableOpacity
-        onPress={handleSave}
-        disabled={loading}
-        className="bg-blue-600 p-4 rounded-xl items-center mt-10 mb-10 shadow-lg"
-      >
-        <Text className="text-white font-bold text-lg">{loading ? 'Saving...' : 'Save Expense'}</Text>
-      </TouchableOpacity>
-    </ScrollView>
+    </View>
   );
 }

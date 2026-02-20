@@ -1,113 +1,97 @@
-import React, { useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Image } from 'react-native';
 import { useExpenses } from '../../hooks/use-expenses';
-import { Expense } from '../../types/expense';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { syncSmsExpenses } from '../../services/sms-service';
+import { ExpenseItem } from '../../components/ExpenseItem';
+import { BalanceCard } from '../../components/BalanceCard';
+import { AnalyticsChart } from '../../components/AnalyticsChart';
+import { TransactionDetailSheet } from '../../components/TransactionDetailSheet';
+import { supabase } from '../../lib/supabase';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Animated, { FadeInDown } from 'react-native-reanimated';
+import { Expense } from '../../types/expense';
 
 export default function HomeScreen() {
-  const { expenses, loading, deleteExpense, fetchExpenses } = useExpenses();
-  const [syncing, setSyncing] = useState(false);
+  const { expenses, loading, deleteExpense } = useExpenses();
+  const [userName, setUserName] = useState('Priscilla');
+  const [selectedTransaction, setSelectedTransaction] = useState<Expense | null>(null);
   const router = useRouter();
+  const insets = useSafeAreaInsets();
 
-  const handleSync = async () => {
-    setSyncing(true);
-    try {
-      const count = await syncSmsExpenses();
-      if (typeof count === 'number' && count > 0) {
-        Alert.alert('Sync Complete', `Added ${count} new expenses from SMS.`);
-        fetchExpenses();
-      } else {
-        Alert.alert('Sync Complete', 'No new transaction SMS found.');
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user?.email) {
+        setUserName(user.email.split('@')[0]);
       }
-    } catch (error) {
-      Alert.alert('Sync Failed', 'Could not read SMS. Make sure you are on Android.');
-    } finally {
-      setSyncing(false);
-    }
-  };
+    });
+  }, []);
 
-  const handleLogout = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) Alert.alert('Error', error.message);
-  };
-
-  const renderExpenseItem = ({ item }: { item: Expense }) => (
-    <View className="bg-white p-4 rounded-xl mb-3 flex-row justify-between items-center shadow-sm">
-      <View className="flex-1">
-        <View className="flex-row items-center">
-          <Text className="text-lg font-bold text-gray-800">{item.merchant}</Text>
-          <View className={`ml-2 px-2 py-0.5 rounded-full ${item.source === 'sms' ? 'bg-blue-100' : 'bg-green-100'}`}>
-            <Text className={`text-xs ${item.source === 'sms' ? 'text-blue-600' : 'text-green-600'}`}>
-              {item.source.toUpperCase()}
-            </Text>
-          </View>
-        </View>
-        <Text className="text-gray-500 text-sm">{item.category} • {new Date(item.date).toLocaleDateString()}</Text>
-        {item.note && <Text className="text-gray-400 text-xs mt-1 italic">"{item.note}"</Text>}
-      </View>
-      <View className="items-end">
-        <Text className="text-lg font-bold text-red-600">₹{item.amount}</Text>
-        <TouchableOpacity onPress={() => deleteExpense(item.id)} className="mt-2">
-          <Ionicons name="trash-outline" size={20} color="#EF4444" />
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
+  const income = expenses.filter(e => e.type === 'income').reduce((sum, e) => sum + e.amount, 0);
+  const outcome = expenses.filter(e => e.type !== 'income').reduce((sum, e) => sum + e.amount, 0);
+  const totalBalance = 25000 + income - outcome; // Mock starting balance + net
 
   return (
-    <View className="flex-1 bg-gray-50 p-4">
-      <View className="flex-row justify-between items-center mb-6 mt-8">
-        <View className="flex-row items-center">
-          <View>
-            <Text className="text-3xl font-bold text-gray-800">Expenses</Text>
-            <Text className="text-gray-500">Track your spending</Text>
-          </View>
-          <TouchableOpacity 
-            onPress={handleLogout}
-            className="ml-4 p-2"
-          >
-            <Ionicons name="log-out-outline" size={24} color="#6B7280" />
-          </TouchableOpacity>
+    <View style={{ flex: 1, backgroundColor: '#F5F6FA', paddingTop: insets.top }}>
+      {/* Header */}
+      <View className="px-5 h-[60px] flex-row justify-between items-center">
+        <View className="w-10 h-10 rounded-full bg-white items-center justify-center overflow-hidden shadow-sm">
+           <Ionicons name="person" size={20} color="#5B2EFF" />
         </View>
-        <View className="flex-row">
-          <TouchableOpacity 
-            onPress={handleSync}
-            disabled={syncing}
-            className="bg-gray-200 p-3 rounded-full mr-2"
-          >
-            {syncing ? (
-              <ActivityIndicator size="small" color="#4B5563" />
-            ) : (
-              <Ionicons name="sync" size={24} color="#4B5563" />
-            )}
-          </TouchableOpacity>
-          <TouchableOpacity 
-            onPress={() => router.push('/modal')}
-            className="bg-blue-600 p-3 rounded-full shadow-lg"
-          >
-            <Ionicons name="add" size={28} color="white" />
-          </TouchableOpacity>
-        </View>
+        <Text className="text-text-dark font-bold text-[18px]">Home</Text>
+        <TouchableOpacity 
+          className="w-10 h-10 items-center justify-center bg-white rounded-full shadow-sm"
+        >
+          <Ionicons name="notifications-outline" size={20} color="#1E1E1E" />
+        </TouchableOpacity>
       </View>
 
-      {loading ? (
-        <ActivityIndicator size="large" color="#2563EB" className="mt-10" />
-      ) : (
-        <FlatList
-          data={expenses}
-          keyExtractor={(item) => item.id}
-          renderItem={renderExpenseItem}
-          ListEmptyComponent={
-            <View className="mt-20 items-center">
-              <Text className="text-gray-400 text-lg">No expenses yet</Text>
-              <Text className="text-gray-400">Tap the + button to add one</Text>
-            </View>
-          }
-          showsVerticalScrollIndicator={false}
-        />
-      )}
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
+        {/* Balance Card */}
+        <Animated.View entering={FadeInDown.delay(100)} className="mt-6 px-5">
+          <BalanceCard amount={totalBalance} />
+        </Animated.View>
+
+        {/* Analytics Section */}
+        <Animated.View entering={FadeInDown.delay(200)} className="px-5 mt-6">
+           <AnalyticsChart />
+        </Animated.View>
+
+        {/* Transaction List */}
+        <Animated.View entering={FadeInDown.delay(300)} className="px-5 mt-6">
+          <View className="flex-row justify-between items-center mb-4">
+            <Text className="text-text-dark font-bold text-[16px]">Transactions</Text>
+            <TouchableOpacity onPress={() => router.push('/expenses')}>
+              <Text className="text-text-grey text-[14px]">View All</Text>
+            </TouchableOpacity>
+          </View>
+          
+          <View className="bg-white rounded-[24px] px-5 py-2 shadow-sm">
+            {loading ? (
+              <ActivityIndicator size="small" color="#5B2EFF" className="py-xl" />
+            ) : expenses.length === 0 ? (
+              <View className="py-xl items-center">
+                <Text className="text-text-grey">No transactions yet.</Text>
+              </View>
+            ) : (
+              expenses.slice(0, 5).map((item) => (
+                <ExpenseItem 
+                  key={item.id} 
+                  item={item} 
+                  onDelete={deleteExpense}
+                  onPress={() => setSelectedTransaction(item)}
+                />
+              ))
+            )}
+          </View>
+        </Animated.View>
+      </ScrollView>
+
+      <TransactionDetailSheet 
+        isVisible={!!selectedTransaction} 
+        onClose={() => setSelectedTransaction(null)}
+        transaction={selectedTransaction}
+      />
     </View>
   );
 }

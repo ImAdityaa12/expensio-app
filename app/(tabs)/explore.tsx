@@ -1,64 +1,114 @@
 import React, { useMemo } from 'react';
-import { View, Text, ScrollView, Dimensions } from 'react-native';
+import { View, Text, ScrollView } from 'react-native';
 import { useExpenses } from '../../hooks/use-expenses';
+import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Animated, { FadeInDown } from 'react-native-reanimated';
+import { DonutChart } from '../../components/DonutChart';
 
-const { width } = Dimensions.get('window');
+export default function AnalyticsScreen() {
+  const { expenses, loading } = useExpenses();
+  const insets = useSafeAreaInsets();
 
-export default function ExploreScreen() {
-  const { expenses } = useExpenses();
+  const totalSpent = useMemo(() => expenses.reduce((sum, e) => sum + e.amount, 0), [expenses]);
+  const budget = 12000; // Monthly budget
+  const progress = Math.min(totalSpent / budget, 1);
 
   const categoryTotals = useMemo(() => {
     const totals: { [key: string]: number } = {};
     expenses.forEach((e) => {
-      totals[e.category] = (totals[e.category] || 0) + e.amount;
+      const cat = e.category || 'Others';
+      totals[cat] = (totals[cat] || 0) + e.amount;
     });
     return Object.entries(totals).sort((a, b) => b[1] - a[1]);
   }, [expenses]);
 
-  const totalSpent = useMemo(() => {
-    return expenses.reduce((sum, e) => sum + e.amount, 0);
-  }, [expenses]);
+  const chartData = useMemo(() => {
+    const colors = ['#4B2E83', '#6C4AB6', '#F48C57', '#10B981', '#EF4444', '#8A8A8A'];
+    return categoryTotals.slice(0, 5).map(([name, value], index) => ({
+      name,
+      value: (value / totalSpent) * 100,
+      color: colors[index % colors.length],
+      amount: value
+    }));
+  }, [categoryTotals, totalSpent]);
 
   return (
-    <ScrollView className="flex-1 bg-gray-50 p-4">
-      <View className="mt-8 mb-6">
-        <Text className="text-3xl font-bold text-gray-800">Analytics</Text>
-        <Text className="text-gray-500">Your spending patterns</Text>
-      </View>
-
-      <View className="bg-blue-600 p-6 rounded-3xl mb-6 shadow-md">
-        <Text className="text-blue-100 text-lg">Total Spent</Text>
-        <Text className="text-white text-4xl font-bold mt-1">₹{totalSpent.toFixed(2)}</Text>
-      </View>
-
-      <Text className="text-xl font-bold text-gray-800 mb-4">By Category</Text>
-      
-      {categoryTotals.length > 0 ? (
-        categoryTotals.map(([category, amount]) => {
-          const percentage = (amount / totalSpent) * 100;
-          return (
-            <View key={category} className="mb-4 bg-white p-4 rounded-2xl shadow-sm">
-              <View className="flex-row justify-between mb-2">
-                <Text className="font-semibold text-gray-700">{category}</Text>
-                <Text className="font-bold text-gray-900">₹{amount.toFixed(2)}</Text>
-              </View>
-              <View className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                <View 
-                  className="h-full bg-blue-500" 
-                  style={{ width: `${percentage}%` }} 
-                />
-              </View>
-              <Text className="text-xs text-gray-400 mt-1">{percentage.toFixed(1)}% of total</Text>
-            </View>
-          );
-        })
-      ) : (
-        <View className="mt-10 items-center">
-          <Text className="text-gray-400">Add expenses to see analytics</Text>
+    <View style={{ flex: 1, backgroundColor: '#F5F6FA', paddingTop: insets.top }}>
+      <ScrollView className="flex-1 px-lg" showsVerticalScrollIndicator={false}>
+        <View className="py-md">
+          <Text className="text-text-dark font-bold text-[22px]">Analytics</Text>
         </View>
-      )}
 
-      <View className="h-10" />
-    </ScrollView>
+        {/* Monthly Summary */}
+        <Animated.View entering={FadeInDown.delay(100)} className="bg-white p-lg rounded-3xl shadow-sm mb-lg">
+          <Text className="text-text-grey text-[14px]">You have spent</Text>
+          <Text className="text-text-dark font-bold text-[28px] mt-1">
+            ${totalSpent.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+          </Text>
+          <Text className="text-text-grey text-[14px] mt-1">this month</Text>
+          
+          <View className="mt-lg">
+            <View className="flex-row justify-between mb-2">
+              <Text className="text-text-dark font-semibold text-[12px]">Monthly Progress</Text>
+              <Text className="text-text-grey text-[12px]">{Math.round(progress * 100)}%</Text>
+            </View>
+            <View className="h-2 bg-gray-100 rounded-full overflow-hidden">
+              <View 
+                style={{ width: `${progress * 100}%` }} 
+                className={`h-full rounded-full ${progress > 0.9 ? 'bg-danger' : 'bg-primary-accent'}`} 
+              />
+            </View>
+          </View>
+        </Animated.View>
+
+        {/* Category Pie Chart */}
+        <Animated.View entering={FadeInDown.delay(200)} className="items-center py-4 mb-lg">
+          <DonutChart 
+            size={240} 
+            strokeWidth={14} 
+            data={chartData} 
+            totalAmount={totalSpent.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+            trend="12% less"
+          />
+        </Animated.View>
+
+        {/* Distribution List */}
+        <Animated.View entering={FadeInDown.delay(300)}>
+          <Text className="text-text-dark font-bold text-base mb-md">Category Distribution</Text>
+          {chartData.map((item, index) => (
+            <View key={item.name} className="bg-white p-md rounded-2xl shadow-sm mb-md flex-row items-center justify-between">
+              <View className="flex-row items-center">
+                <View 
+                  className="w-10 h-10 rounded-full items-center justify-center mr-3"
+                  style={{ backgroundColor: item.color + '15' }}
+                >
+                  <Ionicons name={getCategoryIcon(item.name) as any} size={18} color={item.color} />
+                </View>
+                <View>
+                  <Text className="text-text-dark font-semibold capitalize">{item.name}</Text>
+                  <Text className="text-text-grey text-[11px]">{item.value.toFixed(1)}% of total</Text>
+                </View>
+              </View>
+              <Text className="text-text-dark font-bold">${item.amount.toLocaleString()}</Text>
+            </View>
+          ))}
+        </Animated.View>
+
+        <View className="h-32" />
+      </ScrollView>
+    </View>
   );
 }
+
+const getCategoryIcon = (category: string) => {
+  switch (category.toLowerCase()) {
+    case 'food': return 'restaurant';
+    case 'transport': return 'car';
+    case 'shopping': return 'cart';
+    case 'bills': return 'receipt';
+    case 'electronics': return 'laptop';
+    case 'clothing': return 'shirt';
+    default: return 'apps';
+  }
+};

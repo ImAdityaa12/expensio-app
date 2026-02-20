@@ -8,6 +8,8 @@ export interface Expense {
   category: string;
   date: string;
   source: ExpenseSource;
+  type?: 'income' | 'expense';
+  payment_method?: string;
   note: string | null;
   created_at: string;
 }
