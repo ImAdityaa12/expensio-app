@@ -24,6 +24,7 @@ export default function ModalScreen() {
   const { addExpense } = useExpenses();
   const [amount, setAmount] = useState('0');
   const [category, setCategory] = useState('Others');
+  const [paymentMethod, setPaymentMethod] = useState('Cash');
   const [loading, setLoading] = useState(false);
 
   const handleKeyPress = (val: string) => {
@@ -54,6 +55,7 @@ export default function ModalScreen() {
       note: '',
       date: new Date().toISOString(),
       source: 'manual',
+      payment_method: paymentMethod,
     };
 
     const result = await addExpense(newExpense);
@@ -66,19 +68,19 @@ export default function ModalScreen() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#101F22' }}>
+    <View style={{ flex: 1, backgroundColor: '#F5F6FA' }}>
       {/* Compact Header */}
       <View 
         style={{ paddingTop: insets.top, height: insets.top + 56 }} 
-        className="px-lg flex-row justify-between items-center bg-dark"
+        className="px-lg flex-row justify-between items-center"
       >
         <TouchableOpacity 
           onPress={() => router.back()}
-          className="w-9 h-9 rounded-full items-center justify-center bg-dark-surface border border-dark-border"
+          className="w-9 h-9 rounded-full items-center justify-center bg-white shadow-sm"
         >
-          <Ionicons name="close" size={18} color="white" />
+          <Ionicons name="close" size={18} color="#1E1E1E" />
         </TouchableOpacity>
-        <Text className="text-white font-bold text-[16px]">New Expense</Text>
+        <Text className="text-text-dark font-bold text-[16px]">New Expense</Text>
         <View className="w-9" />
       </View>
 
@@ -89,19 +91,19 @@ export default function ModalScreen() {
       >
         {/* Compact Amount Section */}
         <View className="items-center justify-center pt-md pb-xs">
-          <Text className="text-muted font-medium text-[10px] uppercase tracking-[3px] mb-xs">Amount</Text>
+          <Text className="text-text-grey font-medium text-[10px] uppercase tracking-[3px] mb-xs">Amount</Text>
           <View className="flex-row items-center">
             <Text className="text-primary font-bold text-[28px] mt-1 mr-xs">$</Text>
-            <Text style={{ fontSize: 60 }} className="text-white font-bold tracking-tighter">
+            <Text style={{ fontSize: 60 }} className="text-text-dark font-bold tracking-tighter">
               {amount}
             </Text>
             <Animated.View entering={FadeInDown} className="w-[3px] h-10 bg-primary ml-1 rounded-full" />
           </View>
         </View>
 
-        {/* Category Grid - 3 Balanced Columns, Full Width */}
+        {/* Category Grid */}
         <View className="px-lg mb-md">
-          <Text className="text-muted font-semibold text-[11px] uppercase tracking-widest mb-sm">Category</Text>
+          <Text className="text-text-grey font-semibold text-[11px] uppercase tracking-widest mb-sm">Category</Text>
           <View className="flex-row flex-wrap justify-between">
             {CATEGORIES.map((cat) => {
               const isActive = category === cat.name;
@@ -114,11 +116,11 @@ export default function ModalScreen() {
                   }}
                   style={{ width: '31.5%', marginBottom: 10 }}
                   className={`aspect-[1.1] rounded-xl items-center justify-center border transition-all duration-200 ${
-                    isActive ? 'border-primary bg-primary/10' : 'border-dark-border bg-dark-card'
+                    isActive ? 'border-primary bg-primary/10' : 'border-gray-200 bg-white'
                   }`}
                 >
-                  <Ionicons name={cat.icon as any} size={26} color={isActive ? '#13C8EC' : '#64748B'} />
-                  <Text className={`text-[10px] uppercase font-bold mt-1.5 ${isActive ? 'text-primary' : 'text-muted'}`}>
+                  <Ionicons name={cat.icon as any} size={26} color={isActive ? '#4B2E83' : '#8A8A8A'} />
+                  <Text className={`text-[10px] uppercase font-bold mt-1.5 ${isActive ? 'text-primary' : 'text-text-grey'}`}>
                     {cat.name}
                   </Text>
                 </TouchableOpacity>
@@ -127,26 +129,29 @@ export default function ModalScreen() {
           </View>
         </View>
 
-        {/* Action Row - Simplified */}
-        <View className="px-lg flex-row items-center justify-between py-md border-t border-white/5">
-           <View className="flex-row items-center">
-             <View className="w-8 h-8 rounded-lg bg-dark-card items-center justify-center border border-dark-border mr-sm">
-               <Ionicons name="calendar-outline" size={14} color="#13C8EC" />
-             </View>
-             <Text className="text-white text-[12px] font-medium">Today</Text>
-           </View>
-           
-           <TouchableOpacity className="flex-row items-center">
-             <Text className="text-muted text-[12px] font-medium mr-sm">Add Note</Text>
-             <View className="w-8 h-8 rounded-lg bg-dark-card items-center justify-center border border-dark-border">
-               <Ionicons name="create-outline" size={14} color="#64748B" />
-             </View>
-           </TouchableOpacity>
+        {/* Payment Method */}
+        <View className="px-lg mb-md">
+          <Text className="text-text-grey font-semibold text-[11px] uppercase tracking-widest mb-sm">Payment Method</Text>
+          <View className="flex-row gap-3">
+            {['Cash', 'Card'].map((method) => (
+              <TouchableOpacity
+                key={method}
+                onPress={() => setPaymentMethod(method)}
+                className={`flex-1 py-3 rounded-xl border items-center ${
+                  paymentMethod === method ? 'border-primary bg-primary/10' : 'border-gray-200 bg-white'
+                }`}
+              >
+                <Text className={`font-bold ${paymentMethod === method ? 'text-primary' : 'text-text-grey'}`}>
+                  {method}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
         </View>
       </ScrollView>
 
       {/* Docked Keypad & Save */}
-      <View className="bg-dark-card border-t border-dark-border rounded-t-3xl">
+      <View className="bg-white border-t border-gray-100 rounded-t-3xl shadow-lg">
         <NumericKeypad onPress={handleKeyPress} onDelete={handleDelete} />
         
         <View 
@@ -157,12 +162,12 @@ export default function ModalScreen() {
             onPress={handleSave}
             disabled={loading}
             activeOpacity={0.8}
-            className="bg-primary px-8 py-4 rounded-2xl shadow-lg shadow-primary/20"
+            className="bg-primary px-8 py-4 rounded-2xl shadow-lg"
           >
             {loading ? (
-              <ActivityIndicator color="#101F22" />
+              <ActivityIndicator color="white" />
             ) : (
-              <Text className="text-dark font-bold text-[16px]">Save</Text>
+              <Text className="text-white font-bold text-[16px]">Save</Text>
             )}
           </TouchableOpacity>
         </View>

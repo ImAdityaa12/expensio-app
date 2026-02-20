@@ -6,29 +6,19 @@ module.exports = {
     extend: {
       colors: {
         primary: {
-          DEFAULT: "#13C8EC", // Cyan Blue
-          soft: "rgba(19, 200, 236, 0.1)",
-          glow: "rgba(19, 200, 236, 0.3)",
+          DEFAULT: "#4B2E83", // Primary Purple
+          light: "#6C4AB6",   // Light Purple
+          accent: "#F48C57",  // Accent Orange
+          dark: "#2E1A47",    // Dark Purple
         },
-        dark: {
-          DEFAULT: "#101F22", // Background
-          surface: "rgba(28, 37, 39, 0.7)",
-          card: "#1C2527",
-          border: "rgba(255, 255, 255, 0.05)",
+        bg: {
+          light: "#F5F6FA",
         },
-        light: {
-          DEFAULT: "#F6F8F8",
-          card: "#FFFFFF",
+        text: {
+          dark: "#1E1E1E",
+          grey: "#8A8A8A",
         },
-        success: "#10B981",
-        warning: "#F59E0B",
-        danger: "#EF4444",
-        muted: "#64748B",
-        slate: {
-          100: "#F1F5F9",
-          400: "#94A3B8",
-          500: "#64748B",
-        }
+        white: "#FFFFFF",
       },
       fontFamily: {
         sans: ["Poppins_400Regular"],
@@ -45,6 +35,7 @@ module.exports = {
         '3xl': '32px',
       },
       spacing: {
+        'grid': '8px',
         'xs': '4px',
         'sm': '8px',
         'md': '16px',

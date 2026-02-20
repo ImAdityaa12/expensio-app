@@ -31,7 +31,7 @@ export const NumericKeypad = ({ onPress, onDelete }: NumericKeypadProps) => {
             activeOpacity={0.6}
           >
             {key === 'backspace' ? (
-              <Ionicons name="backspace-outline" size={28} color="white" />
+              <Ionicons name="backspace-outline" size={28} color="#1E1E1E" />
             ) : (
               <Text style={styles.keyText}>{key}</Text>
             )}
@@ -60,7 +60,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   keyText: {
-    color: 'white',
+    color: '#1E1E1E',
     fontSize: 22,
     fontFamily: 'Poppins_500Medium',
   },

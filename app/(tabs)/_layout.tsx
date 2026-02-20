@@ -10,27 +10,28 @@ export default function TabLayout() {
   const insets = useSafeAreaInsets();
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#101F22' }}>
+    <View style={{ flex: 1, backgroundColor: '#F5F6FA' }}>
       <Tabs
         screenOptions={{
-          tabBarActiveTintColor: '#13C8EC',
-          tabBarInactiveTintColor: '#64748B',
+          tabBarActiveTintColor: '#4B2E83',
+          tabBarInactiveTintColor: '#8A8A8A',
           headerShown: false,
           tabBarStyle: {
-            backgroundColor: '#101F22',
-            height: 64 + (insets.bottom > 0 ? insets.bottom - 10 : 0),
+            backgroundColor: '#FFFFFF',
+            height: 70 + (insets.bottom > 0 ? insets.bottom - 10 : 0),
             paddingBottom: insets.bottom > 0 ? insets.bottom : 10,
             paddingTop: 10,
-            borderTopWidth: 1,
-            borderTopColor: 'rgba(255, 255, 255, 0.05)',
-            elevation: 0,
+            borderTopWidth: 0,
+            elevation: 10,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: -2 },
+            shadowOpacity: 0.05,
+            shadowRadius: 10,
           },
           tabBarLabelStyle: {
-            fontFamily: 'Poppins_500Medium',
-            fontSize: 10,
+            fontFamily: 'Poppins_400Regular',
+            fontSize: 12,
             marginTop: 2,
-            textTransform: 'uppercase',
-            letterSpacing: 1,
           },
         }}>
         <Tabs.Screen
@@ -38,16 +39,16 @@ export default function TabLayout() {
           options={{
             title: 'Home',
             tabBarIcon: ({ color, focused }) => (
-              <Ionicons size={22} name={focused ? "grid" : "grid-outline"} color={color} />
+              <Ionicons size={24} name={focused ? "home" : "home-outline"} color={color} />
             ),
           }}
         />
         <Tabs.Screen
-          name="receipts"
+          name="expenses"
           options={{
-            title: 'Logs',
+            title: 'Expenses',
             tabBarIcon: ({ color, focused }) => (
-              <Ionicons size={22} name={focused ? "list" : "list-outline"} color={color} />
+              <Ionicons size={24} name={focused ? "calendar" : "calendar-outline"} color={color} />
             ),
           }}
         />
@@ -65,18 +66,18 @@ export default function TabLayout() {
         <Tabs.Screen
           name="explore"
           options={{
-            title: 'Stats',
+            title: 'Analytics',
             tabBarIcon: ({ color, focused }) => (
-              <Ionicons size={22} name={focused ? "pie-chart" : "pie-chart-outline"} color={color} />
+              <Ionicons size={24} name={focused ? "pie-chart" : "pie-chart-outline"} color={color} />
             ),
           }}
         />
         <Tabs.Screen
           name="profile"
           options={{
-            title: 'Account',
+            title: 'Profile',
             tabBarIcon: ({ color, focused }) => (
-              <Ionicons size={22} name={focused ? "person" : "person-outline"} color={color} />
+              <Ionicons size={24} name={focused ? "person" : "person-outline"} color={color} />
             ),
           }}
         />
@@ -107,31 +108,31 @@ function AddButton({ onPress }: { onPress: () => void }) {
       onPressOut={handlePressOut}
       onPress={onPress}
       style={{
-        top: -15,
+        top: -20,
         justifyContent: 'center',
         alignItems: 'center',
-        height: 60,
+        height: 70,
       }}
     >
       <Animated.View
         style={[
           {
-            width: 56,
-            height: 56,
-            borderRadius: 28,
-            backgroundColor: '#13C8EC',
+            width: 60,
+            height: 60,
+            borderRadius: 30,
+            backgroundColor: '#F48C57',
             justifyContent: 'center',
             alignItems: 'center',
-            shadowColor: '#13C8EC',
-            shadowOffset: { width: 0, height: 8 },
-            shadowOpacity: 0.4,
-            shadowRadius: 12,
-            elevation: 10,
+            shadowColor: '#F48C57',
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.3,
+            shadowRadius: 8,
+            elevation: 8,
           },
           animatedStyle,
         ]}
       >
-        <Ionicons name="add" size={32} color="#101F22" />
+        <Ionicons name="add" size={32} color="white" />
       </Animated.View>
     </TouchableOpacity>
   );

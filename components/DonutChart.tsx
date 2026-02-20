@@ -56,10 +56,10 @@ export const DonutChart = ({ data, size, strokeWidth, totalAmount, trend }: Donu
         </G>
       </Svg>
       <View style={StyleSheet.absoluteFill} className="items-center justify-center">
-        <Text className="text-muted text-[10px] uppercase tracking-widest">Total Spent</Text>
-        <Text className="text-white font-bold text-3xl mt-1">${totalAmount}</Text>
-        <View className="bg-success/20 px-2 py-0.5 rounded-full mt-2 flex-row items-center">
-           <Ionicons name="arrow-up" size={10} color="#10B981" />
+        <Text className="text-text-grey text-[10px] uppercase tracking-widest">Spent</Text>
+        <Text className="text-text-dark font-bold text-3xl mt-1">${totalAmount}</Text>
+        <View className="bg-success/10 px-2 py-0.5 rounded-full mt-2 flex-row items-center">
+           <Ionicons name="trending-down" size={10} color="#10B981" />
            <Text className="text-success text-[10px] font-bold ml-1">{trend}</Text>
         </View>
       </View>
