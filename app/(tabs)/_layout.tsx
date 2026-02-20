@@ -1,6 +1,6 @@
 import { Tabs, useRouter } from 'expo-router';
 import React from 'react';
-import { View, TouchableOpacity, Platform, StyleSheet } from 'react-native';
+import { View, TouchableOpacity, Platform, StyleSheet, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { useAnimatedStyle, withSpring, withTiming, useSharedValue } from 'react-native-reanimated';
@@ -13,7 +13,7 @@ export default function TabLayout() {
     <View style={{ flex: 1, backgroundColor: '#F5F6FA' }}>
       <Tabs
         screenOptions={{
-          tabBarActiveTintColor: '#4B2E83',
+          tabBarActiveTintColor: '#FF6B2C',
           tabBarInactiveTintColor: '#8A8A8A',
           headerShown: false,
           tabBarStyle: {
@@ -44,17 +44,17 @@ export default function TabLayout() {
           }}
         />
         <Tabs.Screen
-          name="expenses"
+          name="explore"
           options={{
-            title: 'Expenses',
+            title: 'Analytics',
             tabBarIcon: ({ color, focused }) => (
-              <Ionicons size={24} name={focused ? "calendar" : "calendar-outline"} color={color} />
+              <Ionicons size={24} name={focused ? "pie-chart" : "pie-chart-outline"} color={color} />
             ),
           }}
         />
         
         <Tabs.Screen
-          name="add-placeholder"
+          name="add"
           options={{
             title: '',
             tabBarButton: () => (
@@ -64,20 +64,20 @@ export default function TabLayout() {
         />
 
         <Tabs.Screen
-          name="explore"
+          name="expenses"
           options={{
-            title: 'Analytics',
+            title: 'Transactions',
             tabBarIcon: ({ color, focused }) => (
-              <Ionicons size={24} name={focused ? "pie-chart" : "pie-chart-outline"} color={color} />
+              <Ionicons size={24} name={focused ? "list" : "list-outline"} color={color} />
             ),
           }}
         />
         <Tabs.Screen
           name="profile"
           options={{
-            title: 'Profile',
+            title: 'Settings',
             tabBarIcon: ({ color, focused }) => (
-              <Ionicons size={24} name={focused ? "person" : "person-outline"} color={color} />
+              <Ionicons size={24} name={focused ? "settings" : "settings-outline"} color={color} />
             ),
           }}
         />
@@ -102,38 +102,54 @@ function AddButton({ onPress }: { onPress: () => void }) {
   };
 
   return (
-    <TouchableOpacity
-      activeOpacity={1}
-      onPressIn={handlePressIn}
-      onPressOut={handlePressOut}
-      onPress={onPress}
-      style={{
-        top: -20,
-        justifyContent: 'center',
-        alignItems: 'center',
-        height: 70,
-      }}
-    >
-      <Animated.View
-        style={[
-          {
-            width: 60,
-            height: 60,
-            borderRadius: 30,
-            backgroundColor: '#F48C57',
-            justifyContent: 'center',
-            alignItems: 'center',
-            shadowColor: '#F48C57',
-            shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.3,
-            shadowRadius: 8,
-            elevation: 8,
-          },
-          animatedStyle,
-        ]}
+    <View style={{ flex: 1, alignItems: 'center' }}>
+      <TouchableOpacity
+        activeOpacity={1}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        onPress={onPress}
+        style={{
+          top: -20,
+          justifyContent: 'center',
+          alignItems: 'center',
+          width: 64,
+          height: 64,
+        }}
       >
-        <Ionicons name="add" size={32} color="white" />
-      </Animated.View>
-    </TouchableOpacity>
+        <Animated.View
+          style={[
+            {
+              width: 56,
+              height: 56,
+              borderRadius: 28,
+              backgroundColor: '#FF6B2C',
+              justifyContent: 'center',
+              alignItems: 'center',
+              shadowColor: '#FF6B2C',
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.3,
+              shadowRadius: 8,
+              elevation: 8,
+            },
+            animatedStyle,
+          ]}
+        >
+          <Ionicons name="add" size={32} color="white" />
+        </Animated.View>
+        <Text 
+          numberOfLines={1}
+          style={{ 
+            fontSize: 10, 
+            color: '#8A8A8A', 
+            marginTop: 4, 
+            fontFamily: 'Poppins_400Regular',
+            position: 'absolute',
+            bottom: -15
+          }}
+        >
+          Add
+        </Text>
+      </TouchableOpacity>
+    </View>
   );
 }

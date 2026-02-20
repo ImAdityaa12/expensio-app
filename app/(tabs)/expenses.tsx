@@ -5,6 +5,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { CategoryBottomSheet } from '../../components/CategoryBottomSheet';
+import { TransactionDetailSheet } from '../../components/TransactionDetailSheet';
+import { Expense } from '../../types/expense';
 
 const CATEGORIES = [
   { name: 'Food', icon: 'restaurant', budget: 1200 },
@@ -22,6 +24,7 @@ export default function ExpensesScreen() {
   const insets = useSafeAreaInsets();
   const [selectedDate, setSelectedDate] = useState(20);
   const [selectedCategory, setSelectedCategory] = useState<any>(null);
+  const [selectedTransaction, setSelectedTransaction] = useState<Expense | null>(null);
   const [isDrawerVisible, setIsDrawerVisible] = useState(false);
 
   const categoryData = useMemo(() => {
@@ -44,7 +47,7 @@ export default function ExpensesScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: '#F5F6FA', paddingTop: insets.top }}>
       {/* Calendar Strip */}
-      <View className="px-lg py-md">
+      <View className="px-5 py-md">
         <Text className="text-text-dark font-bold text-lg mb-md">February 2026</Text>
         <View className="flex-row justify-between">
           {DATES.map((date, i) => (
@@ -60,7 +63,7 @@ export default function ExpensesScreen() {
         </View>
       </View>
 
-      <ScrollView className="flex-1 px-lg" showsVerticalScrollIndicator={false}>
+      <ScrollView className="flex-1 px-5" showsVerticalScrollIndicator={false}>
         {/* Summary Cards */}
         <View className="flex-row gap-4 mb-lg">
           <View className="flex-1 bg-white p-md rounded-2xl shadow-sm" style={{ elevation: 1 }}>
@@ -86,7 +89,7 @@ export default function ExpensesScreen() {
             <View className="flex-row items-center justify-between mb-3">
               <View className="flex-row items-center">
                 <View className="w-10 h-10 rounded-full bg-bg-light items-center justify-center mr-3">
-                  <Ionicons name={cat.icon as any} size={20} color="#4B2E83" />
+                  <Ionicons name={cat.icon as any} size={20} color="#5B2EFF" />
                 </View>
                 <View>
                   <Text className="text-text-dark font-semibold">{cat.name}</Text>
@@ -113,8 +116,15 @@ export default function ExpensesScreen() {
       <CategoryBottomSheet 
         isVisible={isDrawerVisible} 
         onClose={() => setIsDrawerVisible(false)} 
+        onTransactionPress={(transaction) => setSelectedTransaction(transaction)}
         category={selectedCategory}
         expenses={expenses}
+      />
+
+      <TransactionDetailSheet 
+        isVisible={!!selectedTransaction}
+        onClose={() => setSelectedTransaction(null)}
+        transaction={selectedTransaction}
       />
     </View>
   );

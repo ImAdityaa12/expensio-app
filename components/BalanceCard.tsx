@@ -1,7 +1,6 @@
 import React from 'react';
 import { View, Text } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { MiniBarChart } from './MiniBarChart';
 
 interface BalanceCardProps {
   amount: number;
@@ -10,17 +9,29 @@ interface BalanceCardProps {
 export const BalanceCard = ({ amount }: BalanceCardProps) => {
   return (
     <LinearGradient
-      colors={['#4B2E83', '#6C4AB6']}
+      colors={['#2D2D5F', '#1F1F3A']}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
-      className="p-lg rounded-2xl mx-lg shadow-lg"
+      className="p-6 rounded-[24px] shadow-xl relative overflow-hidden h-[140px] justify-between"
     >
-      <Text className="text-white text-sm font-medium opacity-80">Account Balance</Text>
-      <Text className="text-white text-[26px] font-bold mt-1">
-        ${amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-      </Text>
+      {/* Wave texture placeholder could go here if needed */}
       
-      <MiniBarChart />
+      <View>
+        <Text className="text-white/60 text-sm font-medium">Total Balance</Text>
+        <Text className="text-white text-[28px] font-bold mt-1">
+          ${amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+        </Text>
+      </View>
+
+      <View className="flex-row justify-between items-end">
+        <Text className="text-white/40 text-[12px] font-mono tracking-widest">
+          **** **** **** 4252
+        </Text>
+        <View className="flex-row">
+          <View className="w-6 h-6 rounded-full bg-red-500/80" />
+          <View className="w-6 h-6 rounded-full bg-orange-500/80 -ml-3" />
+        </View>
+      </View>
     </LinearGradient>
   );
 };

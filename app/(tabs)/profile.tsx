@@ -31,7 +31,7 @@ export default function ProfileScreen() {
           className="bg-white p-6 rounded-[32px] items-center shadow-sm mb-8"
         >
           <View className="w-20 h-20 rounded-full bg-primary/10 items-center justify-center mb-4">
-            <Ionicons name="person" size={40} color="#4B2E83" />
+            <Ionicons name="person" size={40} color="#5B2EFF" />
           </View>
           <Text className="font-bold text-xl text-text-dark">User Account</Text>
           <Text className="text-text-grey">Manage your preferences</Text>
@@ -45,7 +45,7 @@ export default function ProfileScreen() {
               style={{ elevation: 1 }}
             >
               <View className="w-10 h-10 rounded-xl bg-gray-50 items-center justify-center mr-4">
-                <Ionicons name={item.icon as any} size={20} color="#4B2E83" />
+                <Ionicons name={item.icon as any} size={20} color="#5B2EFF" />
               </View>
               <Text className="flex-1 font-semibold text-text-dark">{item.label}</Text>
               <Ionicons name="chevron-forward" size={18} color="#D1D5DB" />
