@@ -44,82 +44,70 @@ export default function Auth() {
   return (
     <KeyboardAvoidingView 
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={{ flex: 1, backgroundColor: '#F7F4F7' }}
+      style={{ flex: 1, backgroundColor: '#101F22' }}
     >
       <ScrollView 
         contentContainerStyle={{ flexGrow: 1, paddingBottom: 40 }} 
         className="px-8"
-        style={{ paddingTop: insets.top + 40 }}
+        style={{ paddingTop: insets.top + 60 }}
         showsVerticalScrollIndicator={false}
       >
-        <Animated.View entering={FadeInUp.duration(800).delay(100)} className="items-center mb-12">
-          <LinearGradient
-            colors={['#42224A', '#8F659A']}
-            className="w-24 h-24 rounded-[32px] items-center justify-center shadow-2xl mb-6"
-            style={{ elevation: 12 }}
-          >
-            <Ionicons name="wallet" size={48} color="white" />
-          </LinearGradient>
-          <Text className="text-4xl font-poppins-bold text-dark text-center">Expensio</Text>
-          <View className="h-1 w-12 bg-accent rounded-full mt-2" />
-          <Text className="font-poppins text-gray-400 text-center mt-4 px-10">
-            Smart & seamless expense tracking for your lifestyle
+        <Animated.View entering={FadeInUp.duration(800)} className="items-center mb-16">
+          <View className="w-20 h-20 bg-primary rounded-3xl items-center justify-center shadow-2xl mb-6 shadow-primary/40">
+            <Ionicons name="wallet" size={40} color="#101F22" />
+          </View>
+          <Text className="text-4xl font-bold text-white text-center">Expensio</Text>
+          <Text className="text-muted text-center mt-3 px-6 leading-relaxed">
+            Your premium gateway to smart financial management.
           </Text>
         </Animated.View>
 
-        <Animated.View entering={FadeInDown.duration(800).delay(300)} className="space-y-6">
+        <Animated.View entering={FadeInDown.duration(800).delay(200)} className="space-y-6">
           <View>
-            <Text className="text-gray-400 mb-2 font-poppins-semibold text-[10px] uppercase tracking-[2px] ml-1">Email Address</Text>
-            <View className="bg-white rounded-[24px] flex-row items-center px-5 py-5 shadow-sm border border-gray-50">
-              <Ionicons name="mail-outline" size={20} color="#42224A" style={{ marginRight: 15 }} />
+            <Text className="text-muted mb-2 font-medium text-[10px] uppercase tracking-[3px] ml-1">Account Email</Text>
+            <View className="bg-dark-card rounded-2xl flex-row items-center px-5 py-4 border border-white/5">
+              <Ionicons name="mail-outline" size={18} color="#13C8EC" style={{ marginRight: 15 }} />
               <TextInput
                 onChangeText={(text) => setEmail(text)}
                 value={email}
-                placeholder="you@example.com"
-                placeholderTextColor="#D1D5DB"
+                placeholder="email@example.com"
+                placeholderTextColor="rgba(255,255,255,0.2)"
                 autoCapitalize={'none'}
                 keyboardType="email-address"
-                className="flex-1 font-poppins-medium text-dark text-base"
+                className="flex-1 font-medium text-white text-base"
               />
             </View>
           </View>
 
           <View className="mt-6">
-            <Text className="text-gray-400 mb-2 font-poppins-semibold text-[10px] uppercase tracking-[2px] ml-1">Password</Text>
-            <View className="bg-white rounded-[24px] flex-row items-center px-5 py-5 shadow-sm border border-gray-50">
-              <Ionicons name="lock-closed-outline" size={20} color="#42224A" style={{ marginRight: 15 }} />
+            <Text className="text-muted mb-2 font-medium text-[10px] uppercase tracking-[3px] ml-1">Secret Password</Text>
+            <View className="bg-dark-card rounded-2xl flex-row items-center px-5 py-4 border border-white/5">
+              <Ionicons name="lock-closed-outline" size={18} color="#13C8EC" style={{ marginRight: 15 }} />
               <TextInput
                 onChangeText={(text) => setPassword(text)}
                 value={password}
                 secureTextEntry={true}
-                placeholder="Minimum 6 characters"
-                placeholderTextColor="#D1D5DB"
+                placeholder="••••••••"
+                placeholderTextColor="rgba(255,255,255,0.2)"
                 autoCapitalize={'none'}
-                className="flex-1 font-poppins-medium text-dark text-base"
+                className="flex-1 font-medium text-white text-base"
               />
             </View>
           </View>
         </Animated.View>
 
-        <Animated.View entering={FadeInDown.duration(800).delay(500)}>
+        <Animated.View entering={FadeInDown.duration(800).delay(400)}>
           <TouchableOpacity 
             activeOpacity={0.8}
             disabled={loading} 
             onPress={handleAuth}
-            className="bg-primary p-6 rounded-[28px] items-center shadow-xl mt-12"
-            style={{
-              shadowColor: "#42224A",
-              shadowOffset: { width: 0, height: 10 },
-              shadowOpacity: 0.3,
-              shadowRadius: 20,
-              elevation: 10,
-            }}
+            className="bg-primary p-5 rounded-2xl items-center shadow-xl mt-12 shadow-primary/30"
           >
             {loading ? (
-              <ActivityIndicator color="white" />
+              <ActivityIndicator color="#101F22" />
             ) : (
-              <Text className="text-white font-poppins-bold text-lg">
-                {isLogin ? 'Sign In to Account' : 'Create New Account'}
+              <Text className="text-dark font-bold text-lg">
+                {isLogin ? 'Sign In Now' : 'Create Account'}
               </Text>
             )}
           </TouchableOpacity>
@@ -129,21 +117,20 @@ export default function Auth() {
             className="mt-8 items-center"
             activeOpacity={0.7}
           >
-            <Text className="font-poppins-medium text-gray-500 text-sm">
-              {isLogin ? "Don't have an account? " : "Already have an account? "}
-              <Text className="text-accent font-poppins-bold">{isLogin ? 'Sign Up' : 'Sign In'}</Text>
+            <Text className="text-muted font-medium text-sm">
+              {isLogin ? "New to the platform? " : "Already have an account? "}
+              <Text className="text-primary font-bold">{isLogin ? 'Sign Up' : 'Sign In'}</Text>
             </Text>
           </TouchableOpacity>
         </Animated.View>
         
         <Animated.View 
-          entering={FadeInDown.duration(800).delay(700)}
-          className="mt-16 mb-6 items-center"
+          entering={FadeInDown.duration(800).delay(600)}
+          className="mt-auto pt-10 items-center"
         >
-          <View className="flex-row items-center bg-gray-100/50 px-4 py-2 rounded-full">
-            <Ionicons name="shield-checkmark" size={12} color="#9CA3AF" style={{ marginRight: 6 }} />
-            <Text className="font-poppins-bold text-[9px] text-gray-400 uppercase tracking-[2px]">
-              Encrypted & Secure by Supabase
+          <View className="bg-white/5 px-4 py-2 rounded-full border border-white/5">
+            <Text className="font-bold text-[9px] text-muted uppercase tracking-[2px]">
+              Cloud Secure Infrastructure
             </Text>
           </View>
         </Animated.View>

@@ -6,24 +6,50 @@ module.exports = {
     extend: {
       colors: {
         primary: {
-          DEFAULT: "#42224A",
-          soft: "#8F659A",
+          DEFAULT: "#13C8EC", // Cyan Blue
+          soft: "rgba(19, 200, 236, 0.1)",
+          glow: "rgba(19, 200, 236, 0.3)",
         },
-        accent: "#EF8767",
-        background: "#F7F4F7",
-        dark: "#120216",
-        card: "#FFFFFF",
+        dark: {
+          DEFAULT: "#101F22", // Background
+          surface: "rgba(28, 37, 39, 0.7)",
+          card: "#1C2527",
+          border: "rgba(255, 255, 255, 0.05)",
+        },
+        light: {
+          DEFAULT: "#F6F8F8",
+          card: "#FFFFFF",
+        },
+        success: "#10B981",
+        warning: "#F59E0B",
+        danger: "#EF4444",
+        muted: "#64748B",
+        slate: {
+          100: "#F1F5F9",
+          400: "#94A3B8",
+          500: "#64748B",
+        }
       },
       fontFamily: {
-        poppins: ["Poppins_400Regular"],
-        "poppins-medium": ["Poppins_500Medium"],
-        "poppins-semibold": ["Poppins_600SemiBold"],
-        "poppins-bold": ["Poppins_700Bold"],
-        "poppins-light": ["Poppins_300Light"],
+        sans: ["Poppins_400Regular"],
+        medium: ["Poppins_500Medium"],
+        semibold: ["Poppins_600SemiBold"],
+        bold: ["Poppins_700Bold"],
       },
       borderRadius: {
-        '2xl': '20px',
-        '3xl': '24px',
+        'sm': '8px',
+        'md': '12px',
+        'lg': '16px',
+        'xl': '20px',
+        '2xl': '24px',
+        '3xl': '32px',
+      },
+      spacing: {
+        'xs': '4px',
+        'sm': '8px',
+        'md': '16px',
+        'lg': '24px',
+        'xl': '32px',
       }
     },
   },

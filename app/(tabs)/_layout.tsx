@@ -10,29 +10,27 @@ export default function TabLayout() {
   const insets = useSafeAreaInsets();
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#F7F4F7' }}>
+    <View style={{ flex: 1, backgroundColor: '#101F22' }}>
       <Tabs
         screenOptions={{
-          tabBarActiveTintColor: '#42224A',
-          tabBarInactiveTintColor: '#9CA3AF',
+          tabBarActiveTintColor: '#13C8EC',
+          tabBarInactiveTintColor: '#64748B',
           headerShown: false,
           tabBarStyle: {
-            backgroundColor: '#ffffff',
+            backgroundColor: '#101F22',
             height: 64 + (insets.bottom > 0 ? insets.bottom - 10 : 0),
             paddingBottom: insets.bottom > 0 ? insets.bottom : 10,
             paddingTop: 10,
             borderTopWidth: 1,
-            borderTopColor: '#F3F4F6',
-            elevation: 20,
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: -4 },
-            shadowOpacity: 0.05,
-            shadowRadius: 8,
+            borderTopColor: 'rgba(255, 255, 255, 0.05)',
+            elevation: 0,
           },
           tabBarLabelStyle: {
             fontFamily: 'Poppins_500Medium',
             fontSize: 10,
             marginTop: 2,
+            textTransform: 'uppercase',
+            letterSpacing: 1,
           },
         }}>
         <Tabs.Screen
@@ -40,16 +38,16 @@ export default function TabLayout() {
           options={{
             title: 'Home',
             tabBarIcon: ({ color, focused }) => (
-              <Ionicons size={22} name={focused ? "home" : "home-outline"} color={color} />
+              <Ionicons size={22} name={focused ? "grid" : "grid-outline"} color={color} />
             ),
           }}
         />
         <Tabs.Screen
           name="receipts"
           options={{
-            title: 'Receipts',
+            title: 'Logs',
             tabBarIcon: ({ color, focused }) => (
-              <Ionicons size={22} name={focused ? "receipt" : "receipt-outline"} color={color} />
+              <Ionicons size={22} name={focused ? "list" : "list-outline"} color={color} />
             ),
           }}
         />
@@ -69,14 +67,14 @@ export default function TabLayout() {
           options={{
             title: 'Stats',
             tabBarIcon: ({ color, focused }) => (
-              <Ionicons size={22} name={focused ? "bar-chart" : "bar-chart-outline"} color={color} />
+              <Ionicons size={22} name={focused ? "pie-chart" : "pie-chart-outline"} color={color} />
             ),
           }}
         />
         <Tabs.Screen
           name="profile"
           options={{
-            title: 'Profile',
+            title: 'Account',
             tabBarIcon: ({ color, focused }) => (
               <Ionicons size={22} name={focused ? "person" : "person-outline"} color={color} />
             ),
@@ -118,22 +116,22 @@ function AddButton({ onPress }: { onPress: () => void }) {
       <Animated.View
         style={[
           {
-            width: 54,
-            height: 54,
-            borderRadius: 18,
-            backgroundColor: '#EF8767',
+            width: 56,
+            height: 56,
+            borderRadius: 28,
+            backgroundColor: '#13C8EC',
             justifyContent: 'center',
             alignItems: 'center',
-            shadowColor: '#EF8767',
-            shadowOffset: { width: 0, height: 6 },
-            shadowOpacity: 0.3,
-            shadowRadius: 10,
-            elevation: 8,
+            shadowColor: '#13C8EC',
+            shadowOffset: { width: 0, height: 8 },
+            shadowOpacity: 0.4,
+            shadowRadius: 12,
+            elevation: 10,
           },
           animatedStyle,
         ]}
       >
-        <Ionicons name="add" size={30} color="white" />
+        <Ionicons name="add" size={32} color="#101F22" />
       </Animated.View>
     </TouchableOpacity>
   );

@@ -11,12 +11,12 @@ interface ExpenseItemProps {
 
 const getCategoryIcon = (category: string) => {
   switch (category.toLowerCase()) {
-    case 'food': return { name: 'restaurant', color: '#FF6B6B' };
-    case 'transport': return { name: 'car', color: '#4D96FF' };
-    case 'shopping': return { name: 'cart', color: '#FFD93D' };
-    case 'bills': return { name: 'receipt', color: '#6BCB77' };
-    case 'entertainment': return { name: 'play', color: '#9D65C9' };
-    default: return { name: 'apps', color: '#9CA3AF' };
+    case 'food': return { name: 'restaurant', color: '#13C8EC' };
+    case 'transport': return { name: 'car', color: '#10B981' };
+    case 'shopping': return { name: 'cart', color: '#F59E0B' };
+    case 'bills': return { name: 'receipt', color: '#EF4444' };
+    case 'entertainment': return { name: 'play', color: '#8B5CF6' };
+    default: return { name: 'apps', color: '#64748B' };
   }
 };
 
@@ -26,35 +26,32 @@ export const ExpenseItem = ({ item, onDelete }: ExpenseItemProps) => {
   return (
     <TouchableOpacity 
       activeOpacity={0.7}
-      className="bg-white p-4 rounded-[24px] mb-4 flex-row items-center shadow-sm border border-gray-50"
-      style={{
-        elevation: 2,
-      }}
+      className="bg-dark-card p-4 rounded-xl mb-3 flex-row items-center border border-white/5"
     >
       <View 
-        className="w-12 h-12 rounded-2xl items-center justify-center"
-        style={{ backgroundColor: icon.color + '15' }}
+        className="w-12 h-12 rounded-xl items-center justify-center bg-white/5"
       >
-        <Ionicons name={icon.name as any} size={24} color={icon.color} />
+        <Ionicons name={icon.name as any} size={22} color={icon.color} />
       </View>
 
       <View className="flex-1 ml-4">
-        <Text className="font-poppins-semibold text-base text-dark" numberOfLines={1}>{item.merchant}</Text>
-        <Text className="font-poppins text-xs text-gray-400 capitalize">{item.category} • {new Date(item.date).toLocaleDateString()}</Text>
+        <Text className="font-semibold text-white text-sm" numberOfLines={1}>{item.merchant}</Text>
+        <Text className="text-[10px] text-muted uppercase tracking-wider mt-0.5">{item.category} • {new Date(item.date).toLocaleDateString()}</Text>
       </View>
 
-      <View className="items-end">
-        <Text className="font-poppins-bold text-base text-dark">
+      <View className="items-end mr-3">
+        <Text className="font-bold text-white text-sm">
           -${item.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
         </Text>
-        <TouchableOpacity 
-          onPress={() => onDelete(item.id)} 
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          className="mt-1"
-        >
-          <Ionicons name="trash-outline" size={16} color="#EF8767" />
-        </TouchableOpacity>
       </View>
+      
+      <TouchableOpacity 
+        onPress={() => onDelete(item.id)} 
+        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        className="w-8 h-8 rounded-full items-center justify-center bg-white/5"
+      >
+        <Ionicons name="trash-outline" size={14} color="#EF4444" />
+      </TouchableOpacity>
     </TouchableOpacity>
   );
 };

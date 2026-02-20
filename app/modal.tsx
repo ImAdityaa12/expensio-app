@@ -1,45 +1,57 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, Alert, ActivityIndicator, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useExpenses } from '../hooks/use-expenses';
 import { NewExpense } from '../types/expense';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Animated, { FadeInDown, FadeInRight, useAnimatedStyle, withSpring, useSharedValue } from 'react-native-reanimated';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
+import { NumericKeypad } from '../components/NumericKeypad';
 
 const CATEGORIES = [
-  { name: 'Food', icon: 'restaurant', color: '#FF6B6B', light: '#FFF0F0' },
-  { name: 'Transport', icon: 'car', color: '#4D96FF', light: '#F0F5FF' },
-  { name: 'Shopping', icon: 'cart', color: '#FFD93D', light: '#FFFBEB' },
-  { name: 'Bills', icon: 'receipt', color: '#6BCB77', light: '#F0FFF4' },
-  { name: 'Entertainment', icon: 'play', color: '#9D65C9', light: '#F5F0FF' },
-  { name: 'Others', icon: 'apps', color: '#9CA3AF', light: '#F9FAFB' },
+  { name: 'Food', icon: 'restaurant' },
+  { name: 'Transport', icon: 'car' },
+  { name: 'Shopping', icon: 'cart' },
+  { name: 'Bills', icon: 'receipt' },
+  { name: 'Entertainment', icon: 'play' },
+  { name: 'Others', icon: 'apps' },
 ];
 
 export default function ModalScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { addExpense } = useExpenses();
-  const [amount, setAmount] = useState('');
-  const [merchant, setMerchant] = useState('');
+  const [amount, setAmount] = useState('0');
   const [category, setCategory] = useState('Others');
-  const [note, setNote] = useState('');
   const [loading, setLoading] = useState(false);
 
+  const handleKeyPress = (val: string) => {
+    setAmount(prev => {
+      if (prev === '0' && val !== '.') return val;
+      if (val === '.' && prev.includes('.')) return prev;
+      if (prev.includes('.') && prev.split('.')[1].length >= 2) return prev;
+      return prev + val;
+    });
+  };
+
+  const handleDelete = () => {
+    setAmount(prev => (prev.length === 1 ? '0' : prev.slice(0, -1)));
+  };
+
   const handleSave = async () => {
-    if (!amount || !merchant) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      Alert.alert('Missing Info', 'Please provide an amount and merchant name.');
+    const numAmount = parseFloat(amount);
+    if (numAmount <= 0) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
       return;
     }
 
     setLoading(true);
     const newExpense: NewExpense = {
-      amount: parseFloat(amount),
-      merchant,
+      amount: numAmount,
+      merchant: 'Quick Entry',
       category,
-      note,
+      note: '',
       date: new Date().toISOString(),
       source: 'manual',
     };
@@ -53,162 +65,108 @@ export default function ModalScreen() {
     }
   };
 
-  const selectCategory = (name: string) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setCategory(name);
-  };
-
   return (
-    <KeyboardAvoidingView 
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={{ flex: 1, backgroundColor: '#FFFFFF' }}
-    >
-      <View style={{ flex: 1, paddingTop: insets.top }}>
-        {/* Modern Header */}
-        <View className="px-6 py-2 flex-row justify-between items-center">
-          <TouchableOpacity 
-            onPress={() => router.back()}
-            className="w-10 h-10 rounded-full bg-gray-50 items-center justify-center border border-gray-100"
-          >
-            <Ionicons name="close" size={24} color="#42224A" />
-          </TouchableOpacity>
-          <Text className="text-lg font-poppins-semibold text-dark">New Transaction</Text>
-          <View className="w-10" />
+    <View style={{ flex: 1, backgroundColor: '#101F22' }}>
+      {/* Compact Header */}
+      <View 
+        style={{ paddingTop: insets.top, height: insets.top + 56 }} 
+        className="px-lg flex-row justify-between items-center bg-dark"
+      >
+        <TouchableOpacity 
+          onPress={() => router.back()}
+          className="w-9 h-9 rounded-full items-center justify-center bg-dark-surface border border-dark-border"
+        >
+          <Ionicons name="close" size={18} color="white" />
+        </TouchableOpacity>
+        <Text className="text-white font-bold text-[16px]">New Expense</Text>
+        <View className="w-9" />
+      </View>
+
+      <ScrollView 
+        className="flex-1" 
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 16 }}
+      >
+        {/* Compact Amount Section */}
+        <View className="items-center justify-center pt-md pb-xs">
+          <Text className="text-muted font-medium text-[10px] uppercase tracking-[3px] mb-xs">Amount</Text>
+          <View className="flex-row items-center">
+            <Text className="text-primary font-bold text-[28px] mt-1 mr-xs">$</Text>
+            <Text style={{ fontSize: 60 }} className="text-white font-bold tracking-tighter">
+              {amount}
+            </Text>
+            <Animated.View entering={FadeInDown} className="w-[3px] h-10 bg-primary ml-1 rounded-full" />
+          </View>
         </View>
 
-        <ScrollView 
-          className="flex-1" 
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 10, paddingBottom: 120 }}
-        >
-          {/* Amount Display Section */}
-          <Animated.View 
-            entering={FadeInDown.delay(100).duration(600)}
-            className="items-center py-6 mb-2"
-          >
-            <Text className="text-gray-400 font-poppins-medium text-xs uppercase tracking-[3px] mb-2">How much?</Text>
-            <View className="flex-row items-center">
-              <Text className="text-4xl font-poppins-bold text-primary mr-1">$</Text>
-              <TextInput
-                keyboardType="decimal-pad"
-                value={amount}
-                onChangeText={setAmount}
-                placeholder="0.00"
-                placeholderTextColor="#E5E7EB"
-                style={{ fontSize: 52, fontFamily: 'Poppins_700Bold' }}
-                className="text-dark min-w-[150px] text-center"
-                autoFocus
-              />
-            </View>
-          </Animated.View>
-
-          {/* Form Fields */}
-          <View className="space-y-6">
-            {/* Merchant Field */}
-            <Animated.View entering={FadeInDown.delay(200).duration(600)}>
-              <Text className="text-dark font-poppins-semibold text-sm mb-3">Where did you spend it?</Text>
-              <View className="flex-row items-center bg-gray-50 rounded-2xl px-4 py-0.5 border border-gray-100">
-                <View className="w-8 h-8 rounded-lg bg-white items-center justify-center shadow-sm">
-                  <Ionicons name="business" size={18} color="#42224A" />
-                </View>
-                <TextInput
-                  value={merchant}
-                  onChangeText={setMerchant}
-                  placeholder="e.g. Starbucks Coffee"
-                  placeholderTextColor="#9CA3AF"
-                  className="flex-1 py-4 px-3 font-poppins text-dark"
-                />
-              </View>
-            </Animated.View>
-
-            {/* Category Section */}
-            <Animated.View entering={FadeInDown.delay(300).duration(600)}>
-              <Text className="text-dark font-poppins-semibold text-sm mb-4">Choose Category</Text>
-              <View className="flex-row flex-wrap justify-between">
-                {CATEGORIES.map((cat, idx) => (
-                  <TouchableOpacity
-                    key={cat.name}
-                    onPress={() => selectCategory(cat.name)}
-                    activeOpacity={0.7}
-                    style={{ width: '31%', marginBottom: 12 }}
-                  >
-                    <View 
-                      className={`items-center py-4 rounded-2xl border ${
-                        category === cat.name ? 'border-primary' : 'border-gray-100 bg-white'
-                      }`}
-                      style={category === cat.name ? { backgroundColor: cat.light } : {}}
-                    >
-                      <Ionicons 
-                        name={cat.icon as any} 
-                        size={22} 
-                        color={cat.color} 
-                      />
-                      <Text 
-                        className={`font-poppins-medium text-[11px] mt-2 ${
-                          category === cat.name ? 'text-primary' : 'text-gray-500'
-                        }`}
-                      >
-                        {cat.name}
-                      </Text>
-                    </View>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </Animated.View>
-
-            {/* Note Field */}
-            <Animated.View entering={FadeInDown.delay(400).duration(600)}>
-              <Text className="text-dark font-poppins-semibold text-sm mb-3">Add a note (optional)</Text>
-              <View className="bg-gray-50 rounded-2xl px-4 py-3 border border-gray-100">
-                <TextInput
-                  value={note}
-                  onChangeText={setNote}
-                  placeholder="What was this purchase for?"
-                  placeholderTextColor="#9CA3AF"
-                  multiline
-                  numberOfLines={2}
-                  className="font-poppins text-dark text-sm min-h-[60px]"
-                  textAlignVertical="top"
-                />
-              </View>
-            </Animated.View>
+        {/* Category Grid - 3 Balanced Columns, Full Width */}
+        <View className="px-lg mb-md">
+          <Text className="text-muted font-semibold text-[11px] uppercase tracking-widest mb-sm">Category</Text>
+          <View className="flex-row flex-wrap justify-between">
+            {CATEGORIES.map((cat) => {
+              const isActive = category === cat.name;
+              return (
+                <TouchableOpacity
+                  key={cat.name}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setCategory(cat.name);
+                  }}
+                  style={{ width: '31.5%', marginBottom: 10 }}
+                  className={`aspect-[1.1] rounded-xl items-center justify-center border transition-all duration-200 ${
+                    isActive ? 'border-primary bg-primary/10' : 'border-dark-border bg-dark-card'
+                  }`}
+                >
+                  <Ionicons name={cat.icon as any} size={26} color={isActive ? '#13C8EC' : '#64748B'} />
+                  <Text className={`text-[10px] uppercase font-bold mt-1.5 ${isActive ? 'text-primary' : 'text-muted'}`}>
+                    {cat.name}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
-        </ScrollView>
+        </View>
 
-        {/* Sticky Action Button */}
+        {/* Action Row - Simplified */}
+        <View className="px-lg flex-row items-center justify-between py-md border-t border-white/5">
+           <View className="flex-row items-center">
+             <View className="w-8 h-8 rounded-lg bg-dark-card items-center justify-center border border-dark-border mr-sm">
+               <Ionicons name="calendar-outline" size={14} color="#13C8EC" />
+             </View>
+             <Text className="text-white text-[12px] font-medium">Today</Text>
+           </View>
+           
+           <TouchableOpacity className="flex-row items-center">
+             <Text className="text-muted text-[12px] font-medium mr-sm">Add Note</Text>
+             <View className="w-8 h-8 rounded-lg bg-dark-card items-center justify-center border border-dark-border">
+               <Ionicons name="create-outline" size={14} color="#64748B" />
+             </View>
+           </TouchableOpacity>
+        </View>
+      </ScrollView>
+
+      {/* Docked Keypad & Save */}
+      <View className="bg-dark-card border-t border-dark-border rounded-t-3xl">
+        <NumericKeypad onPress={handleKeyPress} onDelete={handleDelete} />
+        
         <View 
-          className="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-50 px-6"
-          style={{ 
-            paddingBottom: insets.bottom > 0 ? insets.bottom : 20, 
-            paddingTop: 16,
-          }}
+          className="px-lg pb-sm pt-xs flex-row justify-end"
+          style={{ paddingBottom: Math.max(insets.bottom, 12) }}
         >
-          <Animated.View entering={FadeInDown.delay(500).duration(600)}>
-            <TouchableOpacity
-              onPress={handleSave}
-              disabled={loading}
-              activeOpacity={0.9}
-              className="bg-primary p-5 rounded-2xl items-center shadow-xl"
-              style={{
-                shadowColor: "#42224A",
-                shadowOffset: { width: 0, height: 12 },
-                shadowOpacity: 0.3,
-                shadowRadius: 16,
-                elevation: 10,
-              }}
-            >
-              {loading ? (
-                <ActivityIndicator color="white" />
-              ) : (
-                <View className="flex-row items-center">
-                  <Text className="text-white font-poppins-bold text-lg mr-2">Create Record</Text>
-                  <Ionicons name="arrow-forward" size={20} color="white" />
-                </View>
-              )}
-            </TouchableOpacity>
-          </Animated.View>
+          <TouchableOpacity
+            onPress={handleSave}
+            disabled={loading}
+            activeOpacity={0.8}
+            className="bg-primary px-8 py-4 rounded-2xl shadow-lg shadow-primary/20"
+          >
+            {loading ? (
+              <ActivityIndicator color="#101F22" />
+            ) : (
+              <Text className="text-dark font-bold text-[16px]">Save</Text>
+            )}
+          </TouchableOpacity>
         </View>
       </View>
-    </KeyboardAvoidingView>
+    </View>
   );
 }
