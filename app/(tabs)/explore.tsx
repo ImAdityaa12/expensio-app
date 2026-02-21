@@ -3,10 +3,10 @@ import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { useExpenses } from '../../hooks/use-expenses';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Animated, { FadeInDown } from 'react-native-reanimated';
 import { CategoryBottomSheet } from '../../components/CategoryBottomSheet';
 import { TransactionDetailSheet } from '../../components/TransactionDetailSheet';
 import { Expense } from '../../types/expense';
+import { CalendarStrip } from '../../components/CalendarStrip';
 
 const CATEGORIES = [
   { name: 'Food', icon: 'restaurant', budget: 1200 },
@@ -16,35 +16,18 @@ const CATEGORIES = [
   { name: 'Electronics', icon: 'laptop', budget: 3000 },
 ];
 
-const getWeekDays = () => {
-  const now = new Date();
-  const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay() + 1));
-  const days = [];
-  for (let i = 0; i < 7; i++) {
-    const day = new Date(startOfWeek);
-    day.setDate(startOfWeek.getDate() + i);
-    days.push({
-      name: day.toLocaleDateString('en-US', { weekday: 'short' }),
-      date: day.getDate(),
-      fullDate: day.toISOString().split('T')[0]
-    });
-  }
-  return days;
-};
-
 export default function ExpensesScreen() {
   const { expenses } = useExpenses();
   const insets = useSafeAreaInsets();
-  const weekDays = useMemo(() => getWeekDays(), []);
-  const todayDate = new Date().toISOString().split('T')[0];
   
-  const [selectedDate, setSelectedDate] = useState(todayDate);
+  const [selectedDate, setSelectedDate] = useState(new Date());
   const [selectedCategory, setSelectedCategory] = useState<any>(null);
   const [selectedTransaction, setSelectedTransaction] = useState<Expense | null>(null);
   const [isDrawerVisible, setIsDrawerVisible] = useState(false);
 
   const filteredExpenses = useMemo(() => {
-    return expenses.filter(e => e.date.split('T')[0] === selectedDate);
+    const dateStr = selectedDate.toISOString().split('T')[0];
+    return expenses.filter(e => e.date.split('T')[0] === dateStr);
   }, [expenses, selectedDate]);
 
   const categoryData = useMemo(() => {
@@ -73,21 +56,10 @@ export default function ExpensesScreen() {
       </View>
 
       {/* Calendar Strip */}
-      <View className="px-5 pb-md">
-        <View className="flex-row justify-between">
-          {weekDays.map((day) => (
-            <TouchableOpacity 
-              key={day.fullDate} 
-              onPress={() => setSelectedDate(day.fullDate)}
-              className={`items-center py-3 px-3 rounded-2xl flex-1 mx-1 ${selectedDate === day.fullDate ? 'bg-primary-accent' : 'bg-white'}`}
-              style={{ elevation: selectedDate === day.fullDate ? 4 : 1 }}
-            >
-              <Text className={`text-[10px] font-medium ${selectedDate === day.fullDate ? 'text-white' : 'text-text-grey'}`}>{day.name}</Text>
-              <Text className={`text-[15px] font-bold mt-1 ${selectedDate === day.fullDate ? 'text-white' : 'text-text-dark'}`}>{day.date}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </View>
+      <CalendarStrip 
+        selectedDate={selectedDate} 
+        onDateSelect={setSelectedDate} 
+      />
 
       <ScrollView className="flex-1 px-5" showsVerticalScrollIndicator={false}>
         {/* Summary Cards Row */}

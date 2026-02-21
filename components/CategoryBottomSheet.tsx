@@ -67,17 +67,38 @@ export const CategoryBottomSheet = ({ isVisible, onClose, onTransactionPress, ca
       >
         <View className="w-12 h-1 bg-white/20 rounded-full self-center mt-3 mb-6" />
         
-        <View className="px-lg pb-lg items-center">
-          <Text className="text-white font-bold text-[28px]">
-            -${localCategory.total.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-          </Text>
-          <Text className="text-white font-semibold text-[16px] mt-1">{localCategory.name}</Text>
-          <Text className="text-white/40 text-[12px] mt-1">Tax included</Text>
-          
-          <View className="h-16 w-full mt-lg flex-row items-end justify-between px-md">
-            {[40, 60, 30, 80, 50, 70, 45, 60, 40].map((h, i) => (
-              <View key={i} style={{ height: h + '%' }} className="w-1.5 rounded-full bg-white/20" />
-            ))}
+        <View className="px-lg pb-lg">
+          <View className="items-center mb-6">
+            <View className="w-16 h-16 rounded-full bg-white/10 items-center justify-center mb-3">
+              <Ionicons name="pricetag" size={32} color="white" />
+            </View>
+            <Text className="text-white font-bold text-[24px]">{localCategory.name}</Text>
+          </View>
+
+          <View className="bg-white/10 p-5 rounded-2xl mb-4">
+            <View className="flex-row justify-between items-end mb-2">
+              <Text className="text-white/80 text-[14px]">Total Spent</Text>
+              <Text className="text-white font-bold text-[20px]">
+                ${localCategory.total.toLocaleString(undefined, { minimumFractionDigits: 0 })}
+              </Text>
+            </View>
+
+            <View className="h-2 bg-black/20 rounded-full overflow-hidden mb-2">
+               <View 
+                 style={{ width: `${Math.min((localCategory.total / localCategory.budget) * 100, 100)}%` }} 
+                 className={`h-full rounded-full ${
+                   localCategory.total > localCategory.budget ? 'bg-red-400' : 
+                   localCategory.total > localCategory.budget * 0.8 ? 'bg-orange-400' : 'bg-green-400'
+                 }`} 
+               />
+            </View>
+
+            <View className="flex-row justify-between">
+              <Text className="text-white/60 text-[12px]">
+                {Math.round((localCategory.total / localCategory.budget) * 100)}% of limit
+              </Text>
+              <Text className="text-white/80 text-[12px]">Limit: ${localCategory.budget.toLocaleString()}</Text>
+            </View>
           </View>
         </View>
 
