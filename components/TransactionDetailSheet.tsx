@@ -8,19 +8,20 @@ import Animated, {
   runOnJS
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
-import { Expense } from '../types/expense';
+import { Transaction } from '../types/schema';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 interface TransactionDetailSheetProps {
   isVisible: boolean;
   onClose: () => void;
-  transaction: Expense | null;
+  transaction: Transaction | null;
+  currencySymbol?: string;
 }
 
-export const TransactionDetailSheet = ({ isVisible, onClose, transaction }: TransactionDetailSheetProps) => {
+export const TransactionDetailSheet = ({ isVisible, onClose, transaction, currencySymbol = '$' }: TransactionDetailSheetProps) => {
   const translateY = useSharedValue(SCREEN_HEIGHT);
-  const [localTransaction, setLocalTransaction] = useState<Expense | null>(transaction);
+  const [localTransaction, setLocalTransaction] = useState<Transaction | null>(transaction);
   const [shouldRender, setShouldRender] = useState(isVisible);
 
   useEffect(() => {
@@ -47,7 +48,10 @@ export const TransactionDetailSheet = ({ isVisible, onClose, transaction }: Tran
 
   if (!shouldRender || !localTransaction) return null;
 
-  const isIncome = localTransaction.type === 'income';
+  const isCredit = localTransaction.type === 'CREDIT';
+  const categoryName = localTransaction.categories?.name || 'Uncategorized';
+  const accountName = localTransaction.accounts?.account_name || 'Unknown Account';
+  const iconName = localTransaction.categories?.icon || 'pricetag';
 
   return (
     <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 1000 }}>
@@ -66,17 +70,17 @@ export const TransactionDetailSheet = ({ isVisible, onClose, transaction }: Tran
         <ScrollView className="flex-1 px-lg" showsVerticalScrollIndicator={false}>
           <View className="items-center mb-6">
             <View className="w-20 h-20 rounded-full bg-bg-light items-center justify-center mb-4 border border-gray-100">
-              <Ionicons name="receipt-outline" size={40} color="#5B2EFF" />
+              <Ionicons name={iconName as any} size={40} color="#5B2EFF" />
             </View>
-            <Text className="text-text-dark font-bold text-[24px] text-center">{localTransaction.merchant}</Text>
-            <Text className="text-text-grey text-[14px] mt-1">{new Date(localTransaction.date).toLocaleDateString()}</Text>
+            <Text className="text-text-dark font-bold text-[24px] text-center">{localTransaction.merchant_name || localTransaction.description || 'Unknown'}</Text>
+            <Text className="text-text-grey text-[14px] mt-1">{new Date(localTransaction.transaction_date).toLocaleDateString()}</Text>
           </View>
 
           <View className="items-center mb-8">
-            <Text className={`font-bold text-[36px] ${isIncome ? 'text-success' : 'text-text-dark'}`}>
-              {isIncome ? '+' : '-'}${localTransaction.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+            <Text className={`font-bold text-[36px] ${isCredit ? 'text-success' : 'text-text-dark'}`}>
+              {isCredit ? '+' : '-'}{currencySymbol}{localTransaction.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
             </Text>
-            <Text className="text-text-grey text-[12px] uppercase tracking-widest mt-1">{localTransaction.type || 'Expense'}</Text>
+            <Text className="text-text-grey text-[12px] uppercase tracking-widest mt-1">{localTransaction.type}</Text>
           </View>
 
           <View className="bg-bg-light rounded-[24px] p-5 mb-6">
@@ -84,13 +88,13 @@ export const TransactionDetailSheet = ({ isVisible, onClose, transaction }: Tran
               <Text className="text-text-grey font-medium">Category</Text>
               <View className="flex-row items-center">
                  <Ionicons name="pricetag-outline" size={16} color="#5B2EFF" className="mr-1" />
-                 <Text className="text-text-dark font-bold ml-2 capitalize">{localTransaction.category}</Text>
+                 <Text className="text-text-dark font-bold ml-2 capitalize">{categoryName}</Text>
               </View>
             </View>
             
             <View className="flex-row justify-between mb-4 border-b border-gray-200 pb-4">
               <Text className="text-text-grey font-medium">Payment Method</Text>
-              <Text className="text-text-dark font-bold capitalize">{localTransaction.payment_method || 'Cash'}</Text>
+              <Text className="text-text-dark font-bold capitalize">{accountName}</Text>
             </View>
 
             <View className="flex-row justify-between">
@@ -101,10 +105,10 @@ export const TransactionDetailSheet = ({ isVisible, onClose, transaction }: Tran
             </View>
           </View>
 
-          {localTransaction.note && (
+          {localTransaction.description && (
             <View className="mb-8">
               <Text className="text-text-dark font-bold text-[16px] mb-2">Notes</Text>
-              <Text className="text-text-grey leading-5">{localTransaction.note}</Text>
+              <Text className="text-text-grey leading-5">{localTransaction.description}</Text>
             </View>
           )}
 

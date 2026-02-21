@@ -15,9 +15,10 @@ interface DonutChartProps {
   strokeWidth: number;
   totalAmount: string;
   trend: string;
+  currencySymbol?: string;
 }
 
-export const DonutChart = ({ data, size, strokeWidth, totalAmount, trend }: DonutChartProps) => {
+export const DonutChart = ({ data, size, strokeWidth, totalAmount, trend, currencySymbol = '$' }: DonutChartProps) => {
   const radius = (size - strokeWidth) / 2;
   const circumference = radius * 2 * Math.PI;
   const sharedProgress = useSharedValue(0);
@@ -57,7 +58,7 @@ export const DonutChart = ({ data, size, strokeWidth, totalAmount, trend }: Donu
       </Svg>
       <View style={StyleSheet.absoluteFill} className="items-center justify-center">
         <Text className="text-text-grey text-[10px] uppercase tracking-widest">Spent</Text>
-        <Text className="text-text-dark font-bold text-3xl mt-1">${totalAmount}</Text>
+        <Text className="text-text-dark font-bold text-3xl mt-1">{currencySymbol}{totalAmount}</Text>
         <View className="bg-success/10 px-2 py-0.5 rounded-full mt-2 flex-row items-center">
            <Ionicons name="trending-down" size={10} color="#10B981" />
            <Text className="text-success text-[10px] font-bold ml-1">{trend}</Text>

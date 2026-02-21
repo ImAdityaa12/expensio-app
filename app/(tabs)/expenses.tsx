@@ -1,115 +1,186 @@
-import React, { useState, useMemo } from 'react';
-import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
-import { useExpenses } from '../../hooks/use-expenses';
 import { Ionicons } from '@expo/vector-icons';
+import React, { useMemo, useState } from 'react';
+import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import { CalendarStrip } from '../../components/CalendarStrip';
 import { CategoryBottomSheet } from '../../components/CategoryBottomSheet';
 import { TransactionDetailSheet } from '../../components/TransactionDetailSheet';
-import { Expense } from '../../types/expense';
-
-const CATEGORIES = [
-  { name: 'Food', icon: 'restaurant', budget: 1200 },
-  { name: 'Transport', icon: 'car', budget: 500 },
-  { name: 'Shopping', icon: 'cart', budget: 1500 },
-  { name: 'Bills', icon: 'receipt', budget: 2000 },
-  { name: 'Electronics', icon: 'laptop', budget: 3000 },
-];
-
-const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-const DATES = [16, 17, 18, 19, 20, 21, 22];
+import { useExpenses } from '../../hooks/use-expenses';
+import { Transaction } from '../../types/schema';
 
 export default function ExpensesScreen() {
-  const { expenses } = useExpenses();
+  const { transactions, categories, currencySymbol } = useExpenses();
   const insets = useSafeAreaInsets();
-  const [selectedDate, setSelectedDate] = useState(20);
+  
+  const [selectedDate, setSelectedDate] = useState(new Date());
   const [selectedCategory, setSelectedCategory] = useState<any>(null);
-  const [selectedTransaction, setSelectedTransaction] = useState<Expense | null>(null);
+  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [isDrawerVisible, setIsDrawerVisible] = useState(false);
 
-  const categoryData = useMemo(() => {
-    return CATEGORIES.map(cat => {
-      const total = expenses
-        .filter(e => e.category.toLowerCase() === cat.name.toLowerCase())
-        .reduce((sum, e) => sum + e.amount, 0);
-      return { ...cat, total };
-    });
-  }, [expenses]);
+  const filteredExpenses = useMemo(() => {
+    const dateStr = selectedDate.toISOString().split('T')[0];
+    return transactions.filter(e => e.transaction_date.split('T')[0] === dateStr);
+  }, [transactions, selectedDate]);
 
-  const totalExpense = expenses.reduce((sum, e) => sum + e.amount, 0);
-  const totalSalary = 15000; // Mock salary
+  // Calculate daily income and expenses for selected date
+  const dailyIncome = useMemo(() => 
+    filteredExpenses.filter(e => e.type === 'CREDIT').reduce((sum, e) => sum + e.amount, 0),
+  [filteredExpenses]);
+
+  const dailyExpense = useMemo(() => 
+    filteredExpenses.filter(e => e.type === 'DEBIT').reduce((sum, e) => sum + e.amount, 0),
+  [filteredExpenses]);
+
+  const dailyBalance = useMemo(() => dailyIncome - dailyExpense, [dailyIncome, dailyExpense]);
+
+  const categoryData = useMemo(() => {
+    // Only show categories that have transactions on the selected date
+    const categoriesWithData = categories.map(cat => {
+      const total = filteredExpenses
+        .filter(e => e.type === 'DEBIT' && e.categories?.name === cat.name)
+        .reduce((sum, e) => sum + e.amount, 0);
+      
+      return { 
+        name: cat.name, 
+        icon: cat.icon || 'apps',
+        color: cat.color || '#5B2EFF',
+        budget: 500, // Daily budget per category (can be made dynamic)
+        total 
+      };
+    }).filter(c => c.total > 0); // Only show categories with expenses
+    
+    return categoriesWithData;
+  }, [filteredExpenses, categories]);
 
   const handleCategoryPress = (cat: any) => {
     setSelectedCategory(cat);
     setIsDrawerVisible(true);
   };
 
+  const getCategoryIcon = (iconName: string) => {
+    // Simple fallback if icon name isn't valid in Ionicons, but DB should have valid ones
+    return iconName;
+  };
+
   return (
     <View style={{ flex: 1, backgroundColor: '#F5F6FA', paddingTop: insets.top }}>
-      {/* Calendar Strip */}
-      <View className="px-5 py-md">
-        <Text className="text-text-dark font-bold text-lg mb-md">February 2026</Text>
-        <View className="flex-row justify-between">
-          {DATES.map((date, i) => (
-            <TouchableOpacity 
-              key={date} 
-              onPress={() => setSelectedDate(date)}
-              className={`items-center py-2 px-3 rounded-2xl ${selectedDate === date ? 'bg-primary-accent' : ''}`}
-            >
-              <Text className={`text-[12px] ${selectedDate === date ? 'text-white' : 'text-text-grey'}`}>{DAYS[i]}</Text>
-              <Text className={`text-[16px] font-bold mt-1 ${selectedDate === date ? 'text-white' : 'text-text-dark'}`}>{date}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+      {/* Header */}
+      <View className="px-5 py-4">
+        <Text className="text-text-dark font-bold text-[22px]">Expenses</Text>
+        <Text className="text-text-grey text-[12px] mt-1">
+          {selectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
+        </Text>
       </View>
 
+      {/* Calendar Strip */}
+      <CalendarStrip 
+        selectedDate={selectedDate} 
+        onDateSelect={setSelectedDate} 
+      />
+
       <ScrollView className="flex-1 px-5" showsVerticalScrollIndicator={false}>
-        {/* Summary Cards */}
-        <View className="flex-row gap-4 mb-lg">
-          <View className="flex-1 bg-white p-md rounded-2xl shadow-sm" style={{ elevation: 1 }}>
-            <Text className="text-text-grey text-[12px] font-medium">Total Salary</Text>
-            <Text className="text-success font-bold text-[20px] mt-1">${totalSalary.toLocaleString()}</Text>
+        {/* Summary Cards Row */}
+        <View className="flex-row mb-4" style={{ gap: 12 }}>
+          {/* Daily Income Card */}
+          <View className="flex-1 p-4 rounded-2xl shadow-sm" style={{ backgroundColor: '#10B981' }}>
+            <View className="w-8 h-8 rounded-full items-center justify-center mb-2" style={{ backgroundColor: 'rgba(255,255,255,0.2)' }}>
+              <Ionicons name="arrow-down" size={16} color="white" />
+            </View>
+            <Text className="text-[11px] font-medium" style={{ color: 'rgba(255,255,255,0.8)' }}>Daily Income</Text>
+            <Text className="text-white font-bold text-[18px] mt-1">
+              {currencySymbol}{dailyIncome.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+            </Text>
+            <Text className="text-[9px] mt-1" style={{ color: 'rgba(255,255,255,0.6)' }}>
+              {dailyIncome === 0 ? 'No income' : 'Today'}
+            </Text>
           </View>
-          <View className="flex-1 bg-white p-md rounded-2xl shadow-sm" style={{ elevation: 1 }}>
-            <Text className="text-text-grey text-[12px] font-medium">Total Expense</Text>
-            <Text className="text-danger font-bold text-[20px] mt-1">-${totalExpense.toLocaleString()}</Text>
+
+          {/* Daily Expense Card */}
+          <View className="flex-1 p-4 rounded-2xl shadow-sm" style={{ backgroundColor: '#EF4444' }}>
+            <View className="w-8 h-8 rounded-full items-center justify-center mb-2" style={{ backgroundColor: 'rgba(255,255,255,0.2)' }}>
+              <Ionicons name="arrow-up" size={16} color="white" />
+            </View>
+            <Text className="text-[11px] font-medium" style={{ color: 'rgba(255,255,255,0.8)' }}>Daily Expense</Text>
+            <Text className="text-white font-bold text-[18px] mt-1">
+              {currencySymbol}{dailyExpense.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+            </Text>
+            <Text className="text-[9px] mt-1" style={{ color: 'rgba(255,255,255,0.6)' }}>
+              {dailyExpense === 0 ? 'No expenses' : 'Today'}
+            </Text>
           </View>
         </View>
 
-        {/* Category Expense Cards */}
-        <Text className="text-text-dark font-bold text-base mb-md">Categories</Text>
-        {categoryData.map((cat, index) => (
-          <TouchableOpacity 
-            key={cat.name} 
-            activeOpacity={0.7}
-            onPress={() => handleCategoryPress(cat)}
-            className="bg-white p-md rounded-2xl shadow-sm mb-md"
-            style={{ elevation: 1 }}
-          >
-            <View className="flex-row items-center justify-between mb-3">
-              <View className="flex-row items-center">
-                <View className="w-10 h-10 rounded-full bg-bg-light items-center justify-center mr-3">
-                  <Ionicons name={cat.icon as any} size={20} color="#5B2EFF" />
-                </View>
-                <View>
-                  <Text className="text-text-dark font-semibold">{cat.name}</Text>
-                  <Text className="text-text-grey text-[12px]">Budget: ${cat.budget}</Text>
-                </View>
+        {/* Daily Balance Card */}
+        {(dailyIncome > 0 || dailyExpense > 0) && (
+          <View className="bg-white rounded-2xl shadow-sm mb-4" style={{ padding: 16 }}>
+            <View className="flex-row items-center justify-between">
+              <View>
+                <Text className="text-text-grey text-[12px]">Daily Balance</Text>
+                <Text className="font-bold text-[20px] mt-1" style={{ color: dailyBalance >= 0 ? '#10B981' : '#EF4444' }}>
+                  {dailyBalance >= 0 ? '+' : ''}{currencySymbol}{Math.abs(dailyBalance).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                </Text>
               </View>
-              <Text className="text-text-dark font-bold">${cat.total.toLocaleString()}</Text>
+              <View className="px-3 py-1 rounded-full" style={{ backgroundColor: dailyBalance >= 0 ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)' }}>
+                <Text className="text-[10px] font-semibold" style={{ color: dailyBalance >= 0 ? '#10B981' : '#EF4444' }}>
+                  {dailyBalance >= 0 ? 'Surplus' : 'Deficit'}
+                </Text>
+              </View>
             </View>
-            
-            <View className="h-2 bg-gray-100 rounded-full overflow-hidden">
-              <View 
-                style={{ width: `${Math.min((cat.total / cat.budget) * 100, 100)}%` }} 
-                className={`h-full rounded-full ${cat.total > cat.budget ? 'bg-danger' : 'bg-primary'}`} 
-              />
-            </View>
-            <Text className="text-right text-text-grey text-[10px] mt-1">
-              {Math.round((cat.total / cat.budget) * 100)}% of budget
-            </Text>
-          </TouchableOpacity>
-        ))}
+          </View>
+        )}
+
+        {/* Category Expense Cards */}
+        <Text className="text-text-dark font-bold text-base mb-3">Category Wise</Text>
+        {categoryData.length === 0 ? (
+          <View className="bg-white p-6 rounded-2xl shadow-sm items-center">
+            <Ionicons name="calendar-outline" size={48} color="#CCC" />
+            <Text className="text-text-grey text-[14px] mt-3">No expenses for this day</Text>
+            <Text className="text-text-grey text-[12px] mt-1">Select another date or add expenses</Text>
+          </View>
+        ) : (
+          categoryData.map((cat) => (
+            <TouchableOpacity 
+              key={cat.name} 
+              activeOpacity={0.7}
+              onPress={() => handleCategoryPress(cat)}
+              className="bg-white rounded-2xl shadow-sm mb-3"
+              style={{ padding: 16 }}
+            >
+              <View className="flex-row items-center justify-between mb-3">
+                <View className="flex-row items-center">
+                  <View className="w-10 h-10 rounded-full items-center justify-center mr-3" style={{ backgroundColor: cat.color + '15' }}>
+                    <Ionicons name={getCategoryIcon(cat.icon) as any} size={20} color={cat.color} />
+                  </View>
+                  <View>
+                    <Text className="text-text-dark font-semibold capitalize">{cat.name}</Text>
+                    <Text className="text-text-grey text-[11px]">
+                      {((cat.total / dailyExpense) * 100).toFixed(1)}% of daily expenses
+                    </Text>
+                  </View>
+                </View>
+                <Text className="text-text-dark font-bold">{currencySymbol}{cat.total.toLocaleString()}</Text>
+              </View>
+              
+              <View className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                <View 
+                  style={{ 
+                    width: `${Math.min((cat.total / cat.budget) * 100, 100)}%`,
+                    backgroundColor: cat.total > cat.budget ? '#EF4444' : cat.color
+                  }} 
+                  className="h-full rounded-full"
+                />
+              </View>
+              <View className="flex-row justify-between mt-1">
+                <Text className="text-text-grey text-[10px]">
+                  Daily limit: {currencySymbol}{cat.budget}
+                </Text>
+                <Text className="text-text-grey text-[10px]">
+                  {cat.total > cat.budget ? 'Over limit' : `${currencySymbol}${(cat.budget - cat.total).toLocaleString()} left`}
+                </Text>
+              </View>
+            </TouchableOpacity>
+          ))
+        )}
         <View className="h-20" />
       </ScrollView>
 
@@ -118,13 +189,15 @@ export default function ExpensesScreen() {
         onClose={() => setIsDrawerVisible(false)} 
         onTransactionPress={(transaction) => setSelectedTransaction(transaction)}
         category={selectedCategory}
-        expenses={expenses}
+        expenses={filteredExpenses} // Only show expenses for the selected date
+        currencySymbol={currencySymbol}
       />
 
       <TransactionDetailSheet 
         isVisible={!!selectedTransaction}
         onClose={() => setSelectedTransaction(null)}
         transaction={selectedTransaction}
+        currencySymbol={currencySymbol}
       />
     </View>
   );

@@ -24,7 +24,7 @@ const DATA_2025 = [
 
 const YEARS = ['2026', '2025', '2024'];
 
-export const AnalyticsChart = () => {
+export const AnalyticsChart = ({ currencySymbol = '$' }: { currencySymbol?: string }) => {
   const [year, setYear] = useState('2026');
   const [modalVisible, setModalVisible] = useState(false);
 
@@ -38,10 +38,10 @@ export const AnalyticsChart = () => {
         
         <TouchableOpacity 
           onPress={() => setModalVisible(true)}
-          className="bg-primary-accent px-3 py-1.5 rounded-full flex-row items-center"
+          className="flex-row items-center bg-white border border-gray-200 rounded-full px-4 py-2 shadow-sm"
         >
-          <Text className="text-white text-[12px] font-medium mr-1">{year}</Text>
-          <Ionicons name="chevron-down" size={12} color="white" />
+          <Text className="text-text-dark text-[14px] font-medium mr-2">Year - <Text className="text-primary font-bold">{year}</Text></Text>
+          <Ionicons name="chevron-down" size={14} color="#5B2EFF" />
         </TouchableOpacity>
       </View>
 
@@ -52,7 +52,7 @@ export const AnalyticsChart = () => {
             <View key={item.month} className="items-center flex-1">
               {isActive && (
                 <Text className="text-text-dark font-bold text-[10px] mb-1">
-                  ${item.value}k
+                  {currencySymbol}{item.value}k
                 </Text>
               )}
               <View

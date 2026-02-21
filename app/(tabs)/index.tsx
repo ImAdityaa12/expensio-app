@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Image } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useExpenses } from '../../hooks/use-expenses';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -10,12 +10,12 @@ import { TransactionDetailSheet } from '../../components/TransactionDetailSheet'
 import { supabase } from '../../lib/supabase';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import { Expense } from '../../types/expense';
+import { Transaction } from '../../types/schema';
 
 export default function HomeScreen() {
-  const { expenses, loading, deleteExpense } = useExpenses();
+  const { transactions, loading, deleteTransaction, totalBalance, currencySymbol } = useExpenses();
   const [userName, setUserName] = useState('Priscilla');
-  const [selectedTransaction, setSelectedTransaction] = useState<Expense | null>(null);
+  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
@@ -26,10 +26,6 @@ export default function HomeScreen() {
       }
     });
   }, []);
-
-  const income = expenses.filter(e => e.type === 'income').reduce((sum, e) => sum + e.amount, 0);
-  const outcome = expenses.filter(e => e.type !== 'income').reduce((sum, e) => sum + e.amount, 0);
-  const totalBalance = 25000 + income - outcome; // Mock starting balance + net
 
   return (
     <View style={{ flex: 1, backgroundColor: '#F5F6FA', paddingTop: insets.top }}>
@@ -49,12 +45,12 @@ export default function HomeScreen() {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
         {/* Balance Card */}
         <Animated.View entering={FadeInDown.delay(100)} className="mt-6 px-5">
-          <BalanceCard amount={totalBalance} />
+          <BalanceCard amount={totalBalance} currencySymbol={currencySymbol} />
         </Animated.View>
 
         {/* Analytics Section */}
         <Animated.View entering={FadeInDown.delay(200)} className="px-5 mt-6">
-           <AnalyticsChart />
+           <AnalyticsChart currencySymbol={currencySymbol} />
         </Animated.View>
 
         {/* Transaction List */}
@@ -69,17 +65,18 @@ export default function HomeScreen() {
           <View className="bg-white rounded-[24px] px-5 py-2 shadow-sm">
             {loading ? (
               <ActivityIndicator size="small" color="#5B2EFF" className="py-xl" />
-            ) : expenses.length === 0 ? (
+            ) : transactions.length === 0 ? (
               <View className="py-xl items-center">
                 <Text className="text-text-grey">No transactions yet.</Text>
               </View>
             ) : (
-              expenses.slice(0, 5).map((item) => (
+              transactions.slice(0, 5).map((item) => (
                 <ExpenseItem 
                   key={item.id} 
                   item={item} 
-                  onDelete={deleteExpense}
+                  onDelete={deleteTransaction}
                   onPress={() => setSelectedTransaction(item)}
+                  currencySymbol={currencySymbol}
                 />
               ))
             )}
@@ -91,6 +88,7 @@ export default function HomeScreen() {
         isVisible={!!selectedTransaction} 
         onClose={() => setSelectedTransaction(null)}
         transaction={selectedTransaction}
+        currencySymbol={currencySymbol}
       />
     </View>
   );
