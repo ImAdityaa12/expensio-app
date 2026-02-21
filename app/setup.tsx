@@ -9,7 +9,7 @@ import { useExpenses } from '../hooks/use-expenses';
 export default function SetupScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { fetchData, accounts, categories } = useExpenses();
+  const { fetchData, accounts, categories, currencySymbol } = useExpenses();
   
   const [loading, setLoading] = useState(false);
   
@@ -36,7 +36,7 @@ export default function SetupScreen() {
       const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single();
       if (data) {
         setName(data.name || '');
-        setCurrency(data.currency || 'USD');
+        setCurrency(data.currency || 'USD'); // Use fetched currency
       }
     }
   };
@@ -181,7 +181,7 @@ export default function SetupScreen() {
               {accounts.map(acc => (
                 <View key={acc.id} className="flex-row justify-between py-2 border-b border-gray-50">
                   <Text className="text-text-dark">{acc.account_name} ({acc.bank_name})</Text>
-                  <Text className="font-bold text-primary">${acc.balance}</Text>
+                  <Text className="font-bold text-primary">{currencySymbol}{acc.balance}</Text>
                 </View>
               ))}
             </View>

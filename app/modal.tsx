@@ -11,7 +11,7 @@ import { NumericKeypad } from '../components/NumericKeypad';
 export default function ModalScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { addExpense, categories, accounts } = useExpenses();
+  const { addExpense, categories, accounts, currencySymbol } = useExpenses();
   const [amount, setAmount] = useState('0');
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null);
@@ -97,7 +97,7 @@ export default function ModalScreen() {
         <View className="items-center justify-center pt-md pb-xs">
           <Text className="text-text-grey font-medium text-[10px] uppercase tracking-[3px] mb-xs">Amount</Text>
           <View className="flex-row items-center">
-            <Text className="text-primary font-bold text-[28px] mt-1 mr-xs">$</Text>
+            <Text className="text-primary font-bold text-[28px] mt-1 mr-xs">{currencySymbol}</Text>
             <Text style={{ fontSize: 60 }} className="text-text-dark font-bold tracking-tighter">
               {amount}
             </Text>

@@ -7,7 +7,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { DonutChart } from '../../components/DonutChart';
 
 export default function AnalyticsScreen() {
-  const { transactions, loading } = useExpenses();
+  const { transactions, loading, currencySymbol } = useExpenses();
   const insets = useSafeAreaInsets();
 
   const totalSpent = useMemo(() => 
@@ -49,7 +49,7 @@ export default function AnalyticsScreen() {
         <Animated.View entering={FadeInDown.delay(100)} className="bg-white p-lg rounded-3xl shadow-sm mb-lg">
           <Text className="text-text-grey text-[14px]">You have spent</Text>
           <Text className="text-text-dark font-bold text-[28px] mt-1">
-            ${totalSpent.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+            {currencySymbol}{totalSpent.toLocaleString(undefined, { maximumFractionDigits: 0 })}
           </Text>
           <Text className="text-text-grey text-[14px] mt-1">this month</Text>
           
@@ -75,6 +75,7 @@ export default function AnalyticsScreen() {
             data={chartData} 
             totalAmount={totalSpent.toLocaleString(undefined, { maximumFractionDigits: 0 })}
             trend="12% less"
+            currencySymbol={currencySymbol}
           />
         </Animated.View>
 
@@ -85,7 +86,7 @@ export default function AnalyticsScreen() {
             <View key={item.name} className="bg-white p-md rounded-2xl shadow-sm mb-md flex-row items-center justify-between">
               <View className="flex-row items-center">
                 <View 
-                  className="w-10 h-10 rounded-full items-center justify-center mr-3"
+                  className="w-10 h-10 rounded-full bg-bg-light items-center justify-center mr-3"
                   style={{ backgroundColor: item.color + '15' }}
                 >
                   <Ionicons name={getCategoryIcon(item.name) as any} size={18} color={item.color} />
@@ -95,7 +96,7 @@ export default function AnalyticsScreen() {
                   <Text className="text-text-grey text-[11px]">{item.value.toFixed(1)}% of total</Text>
                 </View>
               </View>
-              <Text className="text-text-dark font-bold">${item.amount.toLocaleString()}</Text>
+              <Text className="text-text-dark font-bold">{currencySymbol}{item.amount.toLocaleString()}</Text>
             </View>
           ))}
         </Animated.View>
