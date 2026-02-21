@@ -1,65 +1,125 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
-import { Expense, NewExpense } from '../types/expense';
+import { Transaction, Category, Account } from '../types/schema';
 import { Alert } from 'react-native';
 
 export function useExpenses() {
-  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [currencySymbol, setCurrencySymbol] = useState('$');
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchExpenses();
-  }, []);
+  const getCurrencySymbol = (code: string) => {
+    switch (code?.toUpperCase()) {
+      case 'INR': return '₹';
+      case 'EUR': return '€';
+      case 'GBP': return '£';
+      case 'JPY': return '¥';
+      default: return '$';
+    }
+  };
 
-  async function fetchExpenses() {
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('expenses')
-        .select('*')
-        .order('date', { ascending: false });
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
 
-      if (error) throw error;
-      setExpenses(data || []);
+      const [transactionsResult, categoriesResult, accountsResult, profileResult] = await Promise.all([
+        supabase
+          .from('transactions')
+          .select(`
+            *,
+            categories (id, name, icon, color),
+            accounts (id, bank_name, account_name)
+          `)
+          .order('transaction_date', { ascending: false }),
+        supabase.from('categories').select('*').order('name'),
+        supabase.from('accounts').select('*').order('account_name'),
+        supabase.from('profiles').select('currency').eq('id', user.id).single()
+      ]);
+
+      if (transactionsResult.error) throw transactionsResult.error;
+      if (categoriesResult.error) throw categoriesResult.error;
+      if (accountsResult.error) throw accountsResult.error;
+
+      setTransactions(transactionsResult.data as unknown as Transaction[]); 
+      setCategories(categoriesResult.data as Category[]);
+      setAccounts(accountsResult.data as Account[]);
+      
+      if (profileResult.data) {
+        setCurrencySymbol(getCurrencySymbol(profileResult.data.currency));
+      }
     } catch (error: any) {
-      Alert.alert('Error fetching expenses', error.message);
+      console.error('Error fetching data:', error.message);
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
 
-  async function addExpense(expense: NewExpense) {
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  async function addTransaction(transaction: Partial<Transaction>) {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('No user found');
 
       const { data, error } = await supabase
-        .from('expenses')
-        .insert([{ ...expense, user_id: user.id }])
-        .select();
+        .from('transactions')
+        .insert([{ 
+          ...transaction, 
+          user_id: user.id,
+          source: transaction.source || 'MANUAL'
+        }])
+        .select(`
+          *,
+          categories (id, name, icon, color),
+          accounts (id, bank_name, account_name)
+        `)
+        .single();
 
       if (error) throw error;
-      setExpenses([data[0], ...expenses]);
-      return data[0];
+      
+      setTransactions(prev => [data as unknown as Transaction, ...prev]);
+      return data;
     } catch (error: any) {
-      Alert.alert('Error adding expense', error.message);
+      Alert.alert('Error adding transaction', error.message);
       return null;
     }
   }
 
-  async function deleteExpense(id: string) {
+  async function deleteTransaction(id: string) {
     try {
       const { error } = await supabase
-        .from('expenses')
+        .from('transactions')
         .delete()
         .eq('id', id);
 
       if (error) throw error;
-      setExpenses(expenses.filter(e => e.id !== id));
+      setTransactions(prev => prev.filter(t => t.id !== id));
     } catch (error: any) {
-      Alert.alert('Error deleting expense', error.message);
+      Alert.alert('Error deleting transaction', error.message);
     }
   }
 
-  return { expenses, loading, fetchExpenses, addExpense, deleteExpense };
+  // Helper to get total balance (sum of accounts)
+  const totalBalance = accounts.reduce((sum, acc) => sum + (acc.balance || 0), 0);
+
+  return { 
+    expenses: transactions, 
+    transactions,
+    categories,
+    accounts,
+    currencySymbol,
+    loading, 
+    fetchData, 
+    addTransaction, 
+    deleteTransaction, 
+    addExpense: addTransaction, 
+    deleteExpense: deleteTransaction, 
+    totalBalance
+  };
 }

@@ -1,31 +1,31 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Alert, ActivityIndicator, StyleSheet } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useExpenses } from '../hooks/use-expenses';
-import { NewExpense } from '../types/expense';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { NumericKeypad } from '../components/NumericKeypad';
 
-const CATEGORIES = [
-  { name: 'Food', icon: 'restaurant' },
-  { name: 'Transport', icon: 'car' },
-  { name: 'Shopping', icon: 'cart' },
-  { name: 'Bills', icon: 'receipt' },
-  { name: 'Entertainment', icon: 'play' },
-  { name: 'Others', icon: 'apps' },
-];
-
 export default function ModalScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { addExpense } = useExpenses();
+  const { addExpense, categories, accounts } = useExpenses();
   const [amount, setAmount] = useState('0');
-  const [category, setCategory] = useState('Others');
-  const [paymentMethod, setPaymentMethod] = useState('Cash');
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
+  const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  // Set defaults when data loads
+  useEffect(() => {
+    if (categories.length > 0 && !selectedCategoryId) {
+      setSelectedCategoryId(categories[0].id);
+    }
+    if (accounts.length > 0 && !selectedAccountId) {
+      setSelectedAccountId(accounts[0].id);
+    }
+  }, [categories, accounts]);
 
   const handleKeyPress = (val: string) => {
     setAmount(prev => {
@@ -47,19 +47,22 @@ export default function ModalScreen() {
       return;
     }
 
-    setLoading(true);
-    const newExpense: NewExpense = {
-      amount: numAmount,
-      merchant: 'Quick Entry',
-      category,
-      note: '',
-      date: new Date().toISOString(),
-      source: 'manual',
-      type: 'expense',
-      payment_method: paymentMethod,
-    };
+    if (!selectedCategoryId || !selectedAccountId) {
+      Alert.alert('Missing Information', 'Please select a category and an account.');
+      return;
+    }
 
-    const result = await addExpense(newExpense);
+    setLoading(true);
+    const result = await addExpense({
+      amount: numAmount,
+      merchant_name: 'Quick Entry',
+      category_id: selectedCategoryId,
+      account_id: selectedAccountId,
+      description: 'Manual Entry',
+      transaction_date: new Date().toISOString(),
+      source: 'MANUAL',
+      type: 'DEBIT',
+    });
     setLoading(false);
 
     if (result) {
@@ -105,49 +108,60 @@ export default function ModalScreen() {
         {/* Category Grid */}
         <View className="px-lg mb-md">
           <Text className="text-text-grey font-semibold text-[11px] uppercase tracking-widest mb-sm">Category</Text>
-          <View className="flex-row flex-wrap justify-between">
-            {CATEGORIES.map((cat) => {
-              const isActive = category === cat.name;
-              return (
-                <TouchableOpacity
-                  key={cat.name}
-                  onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    setCategory(cat.name);
-                  }}
-                  style={{ width: '31.5%', marginBottom: 10 }}
-                  className={`aspect-[1.1] rounded-xl items-center justify-center border transition-all duration-200 ${
-                    isActive ? 'border-primary bg-primary/10' : 'border-gray-200 bg-white'
-                  }`}
-                >
-                  <Ionicons name={cat.icon as any} size={26} color={isActive ? '#4B2E83' : '#8A8A8A'} />
-                  <Text className={`text-[10px] uppercase font-bold mt-1.5 ${isActive ? 'text-primary' : 'text-text-grey'}`}>
-                    {cat.name}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
+          {categories.length === 0 ? (
+            <Text className="text-text-grey">No categories found. Please add categories in settings.</Text>
+          ) : (
+            <View className="flex-row flex-wrap justify-between">
+              {categories.map((cat) => {
+                const isActive = selectedCategoryId === cat.id;
+                return (
+                  <TouchableOpacity
+                    key={cat.id}
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      setSelectedCategoryId(cat.id);
+                    }}
+                    style={{ width: '31.5%', marginBottom: 10 }}
+                    className={`aspect-[1.1] rounded-xl items-center justify-center border transition-all duration-200 ${
+                      isActive ? 'border-primary bg-primary/10' : 'border-gray-200 bg-white'
+                    }`}
+                  >
+                    <Ionicons name={cat.icon as any || 'pricetag'} size={26} color={isActive ? '#4B2E83' : '#8A8A8A'} />
+                    <Text className={`text-[10px] uppercase font-bold mt-1.5 text-center ${isActive ? 'text-primary' : 'text-text-grey'}`}>
+                      {cat.name}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          )}
         </View>
 
-        {/* Payment Method */}
+        {/* Payment Method (Accounts) */}
         <View className="px-lg mb-md">
-          <Text className="text-text-grey font-semibold text-[11px] uppercase tracking-widest mb-sm">Payment Method</Text>
-          <View className="flex-row gap-3">
-            {['Cash', 'Card'].map((method) => (
-              <TouchableOpacity
-                key={method}
-                onPress={() => setPaymentMethod(method)}
-                className={`flex-1 py-3 rounded-xl border items-center ${
-                  paymentMethod === method ? 'border-primary bg-primary/10' : 'border-gray-200 bg-white'
-                }`}
-              >
-                <Text className={`font-bold ${paymentMethod === method ? 'text-primary' : 'text-text-grey'}`}>
-                  {method}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+          <Text className="text-text-grey font-semibold text-[11px] uppercase tracking-widest mb-sm">Payment Account</Text>
+          {accounts.length === 0 ? (
+            <Text className="text-text-grey">No accounts found.</Text>
+          ) : (
+            <View className="flex-row gap-3 flex-wrap">
+              {accounts.map((acc) => {
+                const isActive = selectedAccountId === acc.id;
+                return (
+                  <TouchableOpacity
+                    key={acc.id}
+                    onPress={() => setSelectedAccountId(acc.id)}
+                    className={`min-w-[100px] py-3 px-4 rounded-xl border items-center ${
+                      isActive ? 'border-primary bg-primary/10' : 'border-gray-200 bg-white'
+                    }`}
+                  >
+                    <Text className={`font-bold ${isActive ? 'text-primary' : 'text-text-grey'}`}>
+                      {acc.account_name}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          )}
         </View>
       </ScrollView>
 

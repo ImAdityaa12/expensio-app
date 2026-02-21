@@ -8,20 +8,20 @@ import Animated, {
   runOnJS 
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
-import { Expense } from '../types/expense';
+import { Transaction } from '../types/schema';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 interface CategoryBottomSheetProps {
   isVisible: boolean;
   onClose: () => void;
-  onTransactionPress: (transaction: Expense) => void;
+  onTransactionPress: (transaction: Transaction) => void;
   category: {
     name: string;
     total: number;
     budget: number;
   } | null;
-  expenses: Expense[];
+  expenses: Transaction[];
 }
 
 export const CategoryBottomSheet = ({ isVisible, onClose, onTransactionPress, category, expenses }: CategoryBottomSheetProps) => {
@@ -103,7 +103,7 @@ export const CategoryBottomSheet = ({ isVisible, onClose, onTransactionPress, ca
         </View>
 
         <ScrollView className="flex-1 px-lg mt-md" showsVerticalScrollIndicator={false}>
-          {expenses.filter(e => e.category === localCategory.name).map((item) => (
+          {expenses.filter(e => e.categories?.name === localCategory.name).map((item) => (
             <TouchableOpacity 
               key={item.id} 
               onPress={() => onTransactionPress(item)}
@@ -111,12 +111,12 @@ export const CategoryBottomSheet = ({ isVisible, onClose, onTransactionPress, ca
               className="flex-row items-center py-[14px] border-b border-white/10"
             >
               <View className="w-10 h-10 rounded-full bg-white/10 items-center justify-center">
-                <Ionicons name="receipt" size={20} color="white" />
+                <Ionicons name={item.categories?.icon as any || "receipt"} size={20} color="white" />
               </View>
 
               <View className="flex-1 ml-3">
-                <Text className="font-semibold text-white text-[15px]">{item.merchant}</Text>
-                <Text className="text-[13px] text-white/60">{new Date(item.date).toLocaleDateString()}</Text>
+                <Text className="font-semibold text-white text-[15px]">{item.merchant_name || item.description}</Text>
+                <Text className="text-[13px] text-white/60">{new Date(item.transaction_date).toLocaleDateString()}</Text>
               </View>
 
               <View className="items-end">

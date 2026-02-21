@@ -7,24 +7,29 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { DonutChart } from '../../components/DonutChart';
 
 export default function AnalyticsScreen() {
-  const { expenses, loading } = useExpenses();
+  const { transactions, loading } = useExpenses();
   const insets = useSafeAreaInsets();
 
-  const totalSpent = useMemo(() => expenses.reduce((sum, e) => sum + e.amount, 0), [expenses]);
-  const budget = 12000; // Monthly budget
+  const totalSpent = useMemo(() => 
+    transactions.filter(e => e.type === 'DEBIT').reduce((sum, e) => sum + e.amount, 0), 
+  [transactions]);
+
+  const budget = 12000; // Monthly budget (mock)
   const progress = Math.min(totalSpent / budget, 1);
 
   const categoryTotals = useMemo(() => {
     const totals: { [key: string]: number } = {};
-    expenses.forEach((e) => {
-      const cat = e.category || 'Others';
+    transactions.filter(e => e.type === 'DEBIT').forEach((e) => {
+      const cat = e.categories?.name || 'Others';
       totals[cat] = (totals[cat] || 0) + e.amount;
     });
     return Object.entries(totals).sort((a, b) => b[1] - a[1]);
-  }, [expenses]);
+  }, [transactions]);
 
   const chartData = useMemo(() => {
     const colors = ['#4B2E83', '#6C4AB6', '#F48C57', '#10B981', '#EF4444', '#8A8A8A'];
+    if (totalSpent === 0) return [];
+    
     return categoryTotals.slice(0, 5).map(([name, value], index) => ({
       name,
       value: (value / totalSpent) * 100,

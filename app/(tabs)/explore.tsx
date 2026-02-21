@@ -5,47 +5,51 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CategoryBottomSheet } from '../../components/CategoryBottomSheet';
 import { TransactionDetailSheet } from '../../components/TransactionDetailSheet';
-import { Expense } from '../../types/expense';
+import { Transaction } from '../../types/schema';
 import { CalendarStrip } from '../../components/CalendarStrip';
 
-const CATEGORIES = [
-  { name: 'Food', icon: 'restaurant', budget: 1200 },
-  { name: 'Transport', icon: 'car', budget: 500 },
-  { name: 'Shopping', icon: 'cart', budget: 1500 },
-  { name: 'Bills', icon: 'receipt', budget: 2000 },
-  { name: 'Electronics', icon: 'laptop', budget: 3000 },
-];
-
 export default function ExpensesScreen() {
-  const { expenses } = useExpenses();
+  const { transactions, categories } = useExpenses();
   const insets = useSafeAreaInsets();
   
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [selectedCategory, setSelectedCategory] = useState<any>(null);
-  const [selectedTransaction, setSelectedTransaction] = useState<Expense | null>(null);
+  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [isDrawerVisible, setIsDrawerVisible] = useState(false);
 
   const filteredExpenses = useMemo(() => {
     const dateStr = selectedDate.toISOString().split('T')[0];
-    return expenses.filter(e => e.date.split('T')[0] === dateStr);
-  }, [expenses, selectedDate]);
+    return transactions.filter(e => e.transaction_date.split('T')[0] === dateStr);
+  }, [transactions, selectedDate]);
 
   const categoryData = useMemo(() => {
-    return CATEGORIES.map(cat => {
+    // Start with all categories from DB
+    return categories.map(cat => {
       // Calculate total for this category on the selected date
       const total = filteredExpenses
-        .filter(e => e.category.toLowerCase() === cat.name.toLowerCase())
+        .filter(e => e.categories?.name === cat.name) // Match by name or ID if possible
         .reduce((sum, e) => sum + e.amount, 0);
-      return { ...cat, total };
-    });
-  }, [filteredExpenses]);
+      
+      return { 
+        name: cat.name, 
+        icon: cat.icon || 'apps', 
+        budget: 2000, // Mock budget for now as per instructions
+        total 
+      };
+    }).filter(c => c.total > 0 || true); // Show all or only active? Show all for now.
+  }, [filteredExpenses, categories]);
 
-  const totalExpenseOnDate = filteredExpenses.reduce((sum, e) => sum + e.amount, 0);
+  const totalExpenseOnDate = filteredExpenses.filter(e => e.type === 'DEBIT').reduce((sum, e) => sum + e.amount, 0);
   const totalSalary = 15000; // Mock salary
 
   const handleCategoryPress = (cat: any) => {
     setSelectedCategory(cat);
     setIsDrawerVisible(true);
+  };
+
+  const getCategoryIcon = (iconName: string) => {
+    // Simple fallback if icon name isn't valid in Ionicons, but DB should have valid ones
+    return iconName;
   };
 
   return (
@@ -82,38 +86,42 @@ export default function ExpensesScreen() {
 
         {/* Category Expense Cards */}
         <Text className="text-text-dark font-bold text-base mb-md">Category Wise</Text>
-        {categoryData.map((cat, index) => (
-          <TouchableOpacity 
-            key={cat.name} 
-            activeOpacity={0.7}
-            onPress={() => handleCategoryPress(cat)}
-            className="bg-white p-md rounded-[24px] shadow-sm mb-md"
-            style={{ elevation: 1 }}
-          >
-            <View className="flex-row items-center justify-between mb-3">
-              <View className="flex-row items-center">
-                <View className="w-10 h-10 rounded-full bg-bg-light items-center justify-center mr-3">
-                  <Ionicons name={getCategoryIcon(cat.name) as any} size={20} color="#5B2EFF" />
+        {categoryData.length === 0 ? (
+           <Text className="text-text-grey text-center mt-4">No categories found.</Text>
+        ) : (
+          categoryData.map((cat, index) => (
+            <TouchableOpacity 
+              key={cat.name} 
+              activeOpacity={0.7}
+              onPress={() => handleCategoryPress(cat)}
+              className="bg-white p-md rounded-[24px] shadow-sm mb-md"
+              style={{ elevation: 1 }}
+            >
+              <View className="flex-row items-center justify-between mb-3">
+                <View className="flex-row items-center">
+                  <View className="w-10 h-10 rounded-full bg-bg-light items-center justify-center mr-3">
+                    <Ionicons name={getCategoryIcon(cat.icon) as any} size={20} color="#5B2EFF" />
+                  </View>
+                  <View>
+                    <Text className="text-text-dark font-semibold">{cat.name}</Text>
+                    <Text className="text-text-grey text-[12px]">Budget: ${cat.budget}</Text>
+                  </View>
                 </View>
-                <View>
-                  <Text className="text-text-dark font-semibold">{cat.name}</Text>
-                  <Text className="text-text-grey text-[12px]">Budget: ${cat.budget}</Text>
-                </View>
+                <Text className="text-text-dark font-bold">${cat.total.toLocaleString()}</Text>
               </View>
-              <Text className="text-text-dark font-bold">${cat.total.toLocaleString()}</Text>
-            </View>
-            
-            <View className="h-2 bg-gray-100 rounded-full overflow-hidden">
-              <View 
-                style={{ width: `${Math.min((cat.total / cat.budget) * 100, 100)}%` }} 
-                className={`h-full rounded-full ${cat.total > (cat.budget/30) ? 'bg-danger' : 'bg-primary'}`} 
-              />
-            </View>
-            <Text className="text-right text-text-grey text-[10px] mt-1">
-              Limit: ${cat.budget}
-            </Text>
-          </TouchableOpacity>
-        ))}
+              
+              <View className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                <View 
+                  style={{ width: `${Math.min((cat.total / cat.budget) * 100, 100)}%` }} 
+                  className={`h-full rounded-full ${cat.total > (cat.budget) ? 'bg-danger' : 'bg-primary'}`} 
+                />
+              </View>
+              <Text className="text-right text-text-grey text-[10px] mt-1">
+                Limit: ${cat.budget}
+              </Text>
+            </TouchableOpacity>
+          ))
+        )}
         <View className="h-20" />
       </ScrollView>
 
@@ -133,15 +141,3 @@ export default function ExpensesScreen() {
     </View>
   );
 }
-
-const getCategoryIcon = (category: string) => {
-  switch (category.toLowerCase()) {
-    case 'food': return 'restaurant';
-    case 'transport': return 'car';
-    case 'shopping': return 'cart';
-    case 'bills': return 'receipt';
-    case 'electronics': return 'laptop';
-    case 'clothing': return 'shirt';
-    default: return 'apps';
-  }
-};
