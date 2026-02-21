@@ -24,7 +24,7 @@ const DATA_2025 = [
 
 const YEARS = ['2026', '2025', '2024'];
 
-export const AnalyticsChart = () => {
+export const AnalyticsChart = ({ currencySymbol = '$' }: { currencySymbol?: string }) => {
   const [year, setYear] = useState('2026');
   const [modalVisible, setModalVisible] = useState(false);
 
@@ -52,7 +52,7 @@ export const AnalyticsChart = () => {
             <View key={item.month} className="items-center flex-1">
               {isActive && (
                 <Text className="text-text-dark font-bold text-[10px] mb-1">
-                  ${item.value}k
+                  {currencySymbol}{item.value}k
                 </Text>
               )}
               <View

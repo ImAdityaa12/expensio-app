@@ -9,7 +9,7 @@ import { Transaction } from '../../types/schema';
 import { CalendarStrip } from '../../components/CalendarStrip';
 
 export default function ExpensesScreen() {
-  const { transactions, categories } = useExpenses();
+  const { transactions, categories, currencySymbol } = useExpenses();
   const insets = useSafeAreaInsets();
   
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -73,14 +73,14 @@ export default function ExpensesScreen() {
               <Ionicons name="arrow-down" size={16} color="#22C55E" />
             </View>
             <Text className="text-text-grey text-[12px] font-medium">Total Salary</Text>
-            <Text className="text-text-dark font-bold text-[18px] mt-1">${(totalSalary/30).toLocaleString(undefined, {maximumFractionDigits: 0})}</Text>
+            <Text className="text-text-dark font-bold text-[18px] mt-1">{currencySymbol}{(totalSalary/30).toLocaleString(undefined, {maximumFractionDigits: 0})}</Text>
           </View>
           <View className="flex-1 bg-white p-lg rounded-[24px] shadow-sm" style={{ elevation: 2 }}>
             <View className="w-8 h-8 rounded-full bg-danger/10 items-center justify-center mb-2">
               <Ionicons name="arrow-up" size={16} color="#EF4444" />
             </View>
             <Text className="text-text-grey text-[12px] font-medium">Total Expense</Text>
-            <Text className="text-danger font-bold text-[18px] mt-1">-${totalExpenseOnDate.toLocaleString()}</Text>
+            <Text className="text-danger font-bold text-[18px] mt-1">-{currencySymbol}{totalExpenseOnDate.toLocaleString()}</Text>
           </View>
         </View>
 
@@ -104,10 +104,10 @@ export default function ExpensesScreen() {
                   </View>
                   <View>
                     <Text className="text-text-dark font-semibold">{cat.name}</Text>
-                    <Text className="text-text-grey text-[12px]">Budget: ${cat.budget}</Text>
+                    <Text className="text-text-grey text-[12px]">Budget: {currencySymbol}{cat.budget}</Text>
                   </View>
                 </View>
-                <Text className="text-text-dark font-bold">${cat.total.toLocaleString()}</Text>
+                <Text className="text-text-dark font-bold">{currencySymbol}{cat.total.toLocaleString()}</Text>
               </View>
               
               <View className="h-2 bg-gray-100 rounded-full overflow-hidden">
@@ -117,7 +117,7 @@ export default function ExpensesScreen() {
                 />
               </View>
               <Text className="text-right text-text-grey text-[10px] mt-1">
-                Limit: ${cat.budget}
+                Limit: {currencySymbol}{cat.budget}
               </Text>
             </TouchableOpacity>
           ))
@@ -131,12 +131,14 @@ export default function ExpensesScreen() {
         onTransactionPress={(transaction) => setSelectedTransaction(transaction)}
         category={selectedCategory}
         expenses={filteredExpenses} // Only show expenses for the selected date
+        currencySymbol={currencySymbol}
       />
 
       <TransactionDetailSheet 
         isVisible={!!selectedTransaction}
         onClose={() => setSelectedTransaction(null)}
         transaction={selectedTransaction}
+        currencySymbol={currencySymbol}
       />
     </View>
   );

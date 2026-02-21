@@ -16,9 +16,10 @@ interface TransactionDetailSheetProps {
   isVisible: boolean;
   onClose: () => void;
   transaction: Transaction | null;
+  currencySymbol?: string;
 }
 
-export const TransactionDetailSheet = ({ isVisible, onClose, transaction }: TransactionDetailSheetProps) => {
+export const TransactionDetailSheet = ({ isVisible, onClose, transaction, currencySymbol = '$' }: TransactionDetailSheetProps) => {
   const translateY = useSharedValue(SCREEN_HEIGHT);
   const [localTransaction, setLocalTransaction] = useState<Transaction | null>(transaction);
   const [shouldRender, setShouldRender] = useState(isVisible);
@@ -77,7 +78,7 @@ export const TransactionDetailSheet = ({ isVisible, onClose, transaction }: Tran
 
           <View className="items-center mb-8">
             <Text className={`font-bold text-[36px] ${isCredit ? 'text-success' : 'text-text-dark'}`}>
-              {isCredit ? '+' : '-'}${localTransaction.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+              {isCredit ? '+' : '-'}{currencySymbol}{localTransaction.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
             </Text>
             <Text className="text-text-grey text-[12px] uppercase tracking-widest mt-1">{localTransaction.type}</Text>
           </View>

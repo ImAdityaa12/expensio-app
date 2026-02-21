@@ -22,9 +22,10 @@ interface CategoryBottomSheetProps {
     budget: number;
   } | null;
   expenses: Transaction[];
+  currencySymbol?: string;
 }
 
-export const CategoryBottomSheet = ({ isVisible, onClose, onTransactionPress, category, expenses }: CategoryBottomSheetProps) => {
+export const CategoryBottomSheet = ({ isVisible, onClose, onTransactionPress, category, expenses, currencySymbol = '$' }: CategoryBottomSheetProps) => {
   const translateY = useSharedValue(SCREEN_HEIGHT);
   const [localCategory, setLocalCategory] = useState(category);
   const [shouldRender, setShouldRender] = useState(isVisible);
@@ -79,7 +80,7 @@ export const CategoryBottomSheet = ({ isVisible, onClose, onTransactionPress, ca
             <View className="flex-row justify-between items-end mb-2">
               <Text className="text-white/80 text-[14px]">Total Spent</Text>
               <Text className="text-white font-bold text-[20px]">
-                ${localCategory.total.toLocaleString(undefined, { minimumFractionDigits: 0 })}
+                {currencySymbol}{localCategory.total.toLocaleString(undefined, { minimumFractionDigits: 0 })}
               </Text>
             </View>
 
@@ -97,7 +98,7 @@ export const CategoryBottomSheet = ({ isVisible, onClose, onTransactionPress, ca
               <Text className="text-white/60 text-[12px]">
                 {Math.round((localCategory.total / localCategory.budget) * 100)}% of limit
               </Text>
-              <Text className="text-white/80 text-[12px]">Limit: ${localCategory.budget.toLocaleString()}</Text>
+              <Text className="text-white/80 text-[12px]">Limit: {currencySymbol}{localCategory.budget.toLocaleString()}</Text>
             </View>
           </View>
         </View>
@@ -120,9 +121,7 @@ export const CategoryBottomSheet = ({ isVisible, onClose, onTransactionPress, ca
               </View>
 
               <View className="items-end">
-                <Text className="font-bold text-white text-[15px]">
-                  -${item.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                </Text>
+                <Text className="font-bold text-white text-[15px]">{isCredit ? '+' : '-'}{currencySymbol}{item.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</Text>
               </View>
             </TouchableOpacity>
           ))}

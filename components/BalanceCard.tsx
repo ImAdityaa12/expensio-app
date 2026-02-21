@@ -4,9 +4,10 @@ import { LinearGradient } from 'expo-linear-gradient';
 
 interface BalanceCardProps {
   amount: number;
+  currencySymbol?: string;
 }
 
-export const BalanceCard = ({ amount }: BalanceCardProps) => {
+export const BalanceCard = ({ amount, currencySymbol = '$' }: BalanceCardProps) => {
   return (
     <LinearGradient
       colors={['#2D2D5F', '#1F1F3A']}
@@ -19,7 +20,7 @@ export const BalanceCard = ({ amount }: BalanceCardProps) => {
       <View>
         <Text className="text-white/60 text-sm font-medium">Total Balance</Text>
         <Text className="text-white text-[28px] font-bold mt-1">
-          ${amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          {currencySymbol}{amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
         </Text>
       </View>
 

@@ -13,7 +13,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Transaction } from '../../types/schema';
 
 export default function HomeScreen() {
-  const { transactions, loading, deleteTransaction, totalBalance } = useExpenses();
+  const { transactions, loading, deleteTransaction, totalBalance, currencySymbol } = useExpenses();
   const [userName, setUserName] = useState('Priscilla');
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const router = useRouter();
@@ -26,10 +26,6 @@ export default function HomeScreen() {
       }
     });
   }, []);
-
-  // Calculate daily expense for summary if needed, but for now using total balance
-  // The 'totalBalance' from hook is sum of accounts. If 0 (no accounts), maybe fallback?
-  // Let's stick to what the hook provides. If accounts are empty, balance is 0.
 
   return (
     <View style={{ flex: 1, backgroundColor: '#F5F6FA', paddingTop: insets.top }}>
@@ -49,12 +45,12 @@ export default function HomeScreen() {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
         {/* Balance Card */}
         <Animated.View entering={FadeInDown.delay(100)} className="mt-6 px-5">
-          <BalanceCard amount={totalBalance} />
+          <BalanceCard amount={totalBalance} currencySymbol={currencySymbol} />
         </Animated.View>
 
         {/* Analytics Section */}
         <Animated.View entering={FadeInDown.delay(200)} className="px-5 mt-6">
-           <AnalyticsChart />
+           <AnalyticsChart currencySymbol={currencySymbol} />
         </Animated.View>
 
         {/* Transaction List */}
@@ -80,6 +76,7 @@ export default function HomeScreen() {
                   item={item} 
                   onDelete={deleteTransaction}
                   onPress={() => setSelectedTransaction(item)}
+                  currencySymbol={currencySymbol}
                 />
               ))
             )}
@@ -91,6 +88,7 @@ export default function HomeScreen() {
         isVisible={!!selectedTransaction} 
         onClose={() => setSelectedTransaction(null)}
         transaction={selectedTransaction}
+        currencySymbol={currencySymbol}
       />
     </View>
   );
