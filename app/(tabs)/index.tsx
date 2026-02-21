@@ -1,28 +1,31 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { useExpenses } from '../../hooks/use-expenses';
+import { UserProfileSheet } from '@/components/UserProfileSheet';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { ExpenseItem } from '../../components/ExpenseItem';
-import { BalanceCard } from '../../components/BalanceCard';
-import { AnalyticsChart } from '../../components/AnalyticsChart';
-import { TransactionDetailSheet } from '../../components/TransactionDetailSheet';
-import { supabase } from '../../lib/supabase';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { AnalyticsChart } from '../../components/AnalyticsChart';
+import { BalanceCard } from '../../components/BalanceCard';
+import { ExpenseItem } from '../../components/ExpenseItem';
+import { TransactionDetailSheet } from '../../components/TransactionDetailSheet';
+import { useExpenses } from '../../hooks/use-expenses';
+import { supabase } from '../../lib/supabase';
 import { Transaction } from '../../types/schema';
 
 export default function HomeScreen() {
   const { transactions, loading, deleteTransaction, totalBalance, currencySymbol } = useExpenses();
-  const [userName, setUserName] = useState('Priscilla');
+  const [userName, setUserName] = useState('User');
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
+  const [showUserProfile, setShowUserProfile] = useState(false);
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (user?.email) {
-        setUserName(user.email.split('@')[0]);
+        const emailName = user.email.split('@')[0];
+        setUserName(emailName.charAt(0).toUpperCase() + emailName.slice(1));
       }
     });
   }, []);
@@ -31,10 +34,21 @@ export default function HomeScreen() {
     <View style={{ flex: 1, backgroundColor: '#F5F6FA', paddingTop: insets.top }}>
       {/* Header */}
       <View className="px-5 h-[60px] flex-row justify-between items-center">
-        <View className="w-10 h-10 rounded-full bg-white items-center justify-center overflow-hidden shadow-sm">
-           <Ionicons name="person" size={20} color="#5B2EFF" />
+        <TouchableOpacity 
+          className="w-10 h-10 rounded-full bg-primary items-center justify-center shadow-sm"
+          onPress={() => setShowUserProfile(true)}
+          activeOpacity={0.7}
+        >
+          <Text className="text-white font-bold text-[16px]">
+            {userName.charAt(0).toUpperCase()}
+          </Text>
+        </TouchableOpacity>
+        
+        <View className="flex-1 items-center">
+          <Text className="text-text-dark font-bold text-[18px]">Home</Text>
+          <Text className="text-text-grey text-[11px]">Welcome, {userName}</Text>
         </View>
-        <Text className="text-text-dark font-bold text-[18px]">Home</Text>
+        
         <TouchableOpacity 
           className="w-10 h-10 items-center justify-center bg-white rounded-full shadow-sm"
         >
@@ -89,6 +103,11 @@ export default function HomeScreen() {
         onClose={() => setSelectedTransaction(null)}
         transaction={selectedTransaction}
         currencySymbol={currencySymbol}
+      />
+
+      <UserProfileSheet 
+        isVisible={showUserProfile}
+        onClose={() => setShowUserProfile(false)}
       />
     </View>
   );
