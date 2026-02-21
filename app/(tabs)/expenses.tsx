@@ -1,14 +1,19 @@
-import React, { useMemo } from 'react';
-import { View, Text, ScrollView } from 'react-native';
-import { useExpenses } from '../../hooks/use-expenses';
+import { CategoryBottomSheet } from '@/components/CategoryBottomSheet';
+import { TransactionDetailSheet } from '@/components/TransactionDetailSheet';
 import { Ionicons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import React, { useMemo, useState } from 'react';
+import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { DonutChart } from '../../components/DonutChart';
+import { useExpenses } from '../../hooks/use-expenses';
+import { Transaction } from '../../types/schema';
 
 export default function AnalyticsScreen() {
-  const { transactions, loading, currencySymbol } = useExpenses();
+  const { transactions, currencySymbol } = useExpenses();
   const insets = useSafeAreaInsets();
+  const [selectedCategory, setSelectedCategory] = useState<{ name: string; total: number; budget: number } | null>(null);
+  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
 
   const totalSpent = useMemo(() => 
     transactions.filter(e => e.type === 'DEBIT').reduce((sum, e) => sum + e.amount, 0), 
@@ -83,7 +88,12 @@ export default function AnalyticsScreen() {
         <Animated.View entering={FadeInDown.delay(300)}>
           <Text className="text-text-dark font-bold text-base mb-md">Category Distribution</Text>
           {chartData.map((item, index) => (
-            <View key={item.name} className="bg-white p-md rounded-2xl shadow-sm mb-md flex-row items-center justify-between">
+            <TouchableOpacity 
+              key={item.name} 
+              className="bg-white p-md rounded-2xl shadow-sm mb-md flex-row items-center justify-between"
+              onPress={() => setSelectedCategory({ name: item.name, total: item.amount, budget: budget / chartData.length })}
+              activeOpacity={0.7}
+            >
               <View className="flex-row items-center">
                 <View 
                   className="w-10 h-10 rounded-full bg-bg-light items-center justify-center mr-3"
@@ -96,13 +106,35 @@ export default function AnalyticsScreen() {
                   <Text className="text-text-grey text-[11px]">{item.value.toFixed(1)}% of total</Text>
                 </View>
               </View>
-              <Text className="text-text-dark font-bold">{currencySymbol}{item.amount.toLocaleString()}</Text>
-            </View>
+              <View className="flex-row items-center">
+                <Text className="text-text-dark font-bold mr-2">{currencySymbol}{item.amount.toLocaleString()}</Text>
+                <Ionicons name="chevron-forward" size={16} color="#999" />
+              </View>
+            </TouchableOpacity>
           ))}
         </Animated.View>
 
         <View className="h-32" />
       </ScrollView>
+
+      <CategoryBottomSheet 
+        isVisible={!!selectedCategory}
+        onClose={() => setSelectedCategory(null)}
+        onTransactionPress={(transaction) => {
+          setSelectedCategory(null);
+          setSelectedTransaction(transaction);
+        }}
+        category={selectedCategory}
+        expenses={transactions}
+        currencySymbol={currencySymbol}
+      />
+
+      <TransactionDetailSheet 
+        isVisible={!!selectedTransaction}
+        onClose={() => setSelectedTransaction(null)}
+        transaction={selectedTransaction}
+        currencySymbol={currencySymbol}
+      />
     </View>
   );
 }

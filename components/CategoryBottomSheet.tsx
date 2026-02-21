@@ -1,13 +1,13 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Dimensions, Pressable } from 'react-native';
-import Animated, { 
-  useSharedValue, 
-  useAnimatedStyle, 
-  withTiming, 
-  interpolate,
-  runOnJS 
-} from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
+import React, { useEffect, useState } from 'react';
+import { Dimensions, Pressable, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import Animated, {
+  interpolate,
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming
+} from 'react-native-reanimated';
 import { Transaction } from '../types/schema';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -42,7 +42,7 @@ export const CategoryBottomSheet = ({ isVisible, onClose, onTransactionPress, ca
         }
       });
     }
-  }, [isVisible, category]);
+  }, [isVisible, category, translateY]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: translateY.value }],
@@ -121,7 +121,7 @@ export const CategoryBottomSheet = ({ isVisible, onClose, onTransactionPress, ca
               </View>
 
               <View className="items-end">
-                <Text className="font-bold text-white text-[15px]">{isCredit ? '+' : '-'}{currencySymbol}{item.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</Text>
+                <Text className="font-bold text-white text-[15px]">{item.type === 'CREDIT' ? '+' : '-'}{currencySymbol}{item.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</Text>
               </View>
             </TouchableOpacity>
           ))}
