@@ -1,9 +1,9 @@
+import { Ionicons } from '@expo/vector-icons';
 import { Tabs, useRouter } from 'expo-router';
 import React from 'react';
-import { View, TouchableOpacity, Platform, StyleSheet, Text } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Text, TouchableOpacity, View } from 'react-native';
+import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Animated, { useAnimatedStyle, withSpring, withTiming, useSharedValue } from 'react-native-reanimated';
 
 export default function TabLayout() {
   const router = useRouter();
@@ -46,9 +46,9 @@ export default function TabLayout() {
         <Tabs.Screen
           name="explore"
           options={{
-            title: 'Expenses',
+            title: 'Analytics',
             tabBarIcon: ({ color, focused }) => (
-              <Ionicons size={24} name={focused ? "calendar" : "calendar-outline"} color={color} />
+              <Ionicons size={24} name={focused ? "pie-chart" : "pie-chart-outline"} color={color} />
             ),
           }}
         />
@@ -66,9 +66,9 @@ export default function TabLayout() {
         <Tabs.Screen
           name="expenses"
           options={{
-            title: 'Analytics',
+            title: 'Expenses',
             tabBarIcon: ({ color, focused }) => (
-              <Ionicons size={24} name={focused ? "pie-chart" : "pie-chart-outline"} color={color} />
+              <Ionicons size={24} name={focused ? "calendar" : "calendar-outline"} color={color} />
             ),
           }}
         />

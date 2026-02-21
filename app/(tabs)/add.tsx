@@ -153,7 +153,7 @@ export default function AddExpenseScreen() {
       console.error(error);
     } else {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      Alert.alert('Success', 'Transaction added successfully');
+      Alert.alert('Success', `${transactionType === 'CREDIT' ? 'Income' : 'Expense'} added successfully`);
       setAmount('0');
       setDescription('');
     }
