@@ -7,6 +7,8 @@ create table public.expenses (
   category text not null,
   date timestamp with time zone default now() not null,
   source text check (source in ('sms', 'manual')) not null,
+  type text check (type in ('income', 'expense')) default 'expense' not null,
+  payment_method text,
   note text,
   created_at timestamp with time zone default now() not null
 );

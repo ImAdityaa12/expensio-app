@@ -55,6 +55,7 @@ export default function ModalScreen() {
       note: '',
       date: new Date().toISOString(),
       source: 'manual',
+      type: 'expense',
       payment_method: paymentMethod,
     };
 

@@ -46,9 +46,9 @@ export default function TabLayout() {
         <Tabs.Screen
           name="explore"
           options={{
-            title: 'Analytics',
+            title: 'Expenses',
             tabBarIcon: ({ color, focused }) => (
-              <Ionicons size={24} name={focused ? "pie-chart" : "pie-chart-outline"} color={color} />
+              <Ionicons size={24} name={focused ? "calendar" : "calendar-outline"} color={color} />
             ),
           }}
         />
@@ -66,9 +66,9 @@ export default function TabLayout() {
         <Tabs.Screen
           name="expenses"
           options={{
-            title: 'Transactions',
+            title: 'Analytics',
             tabBarIcon: ({ color, focused }) => (
-              <Ionicons size={24} name={focused ? "list" : "list-outline"} color={color} />
+              <Ionicons size={24} name={focused ? "pie-chart" : "pie-chart-outline"} color={color} />
             ),
           }}
         />

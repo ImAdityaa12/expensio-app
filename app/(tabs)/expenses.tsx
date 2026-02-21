@@ -1,131 +1,114 @@
-import React, { useState, useMemo } from 'react';
-import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
+import React, { useMemo } from 'react';
+import { View, Text, ScrollView } from 'react-native';
 import { useExpenses } from '../../hooks/use-expenses';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import { CategoryBottomSheet } from '../../components/CategoryBottomSheet';
-import { TransactionDetailSheet } from '../../components/TransactionDetailSheet';
-import { Expense } from '../../types/expense';
+import { DonutChart } from '../../components/DonutChart';
 
-const CATEGORIES = [
-  { name: 'Food', icon: 'restaurant', budget: 1200 },
-  { name: 'Transport', icon: 'car', budget: 500 },
-  { name: 'Shopping', icon: 'cart', budget: 1500 },
-  { name: 'Bills', icon: 'receipt', budget: 2000 },
-  { name: 'Electronics', icon: 'laptop', budget: 3000 },
-];
-
-const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-const DATES = [16, 17, 18, 19, 20, 21, 22];
-
-export default function ExpensesScreen() {
-  const { expenses } = useExpenses();
+export default function AnalyticsScreen() {
+  const { expenses, loading } = useExpenses();
   const insets = useSafeAreaInsets();
-  const [selectedDate, setSelectedDate] = useState(20);
-  const [selectedCategory, setSelectedCategory] = useState<any>(null);
-  const [selectedTransaction, setSelectedTransaction] = useState<Expense | null>(null);
-  const [isDrawerVisible, setIsDrawerVisible] = useState(false);
 
-  const categoryData = useMemo(() => {
-    return CATEGORIES.map(cat => {
-      const total = expenses
-        .filter(e => e.category.toLowerCase() === cat.name.toLowerCase())
-        .reduce((sum, e) => sum + e.amount, 0);
-      return { ...cat, total };
+  const totalSpent = useMemo(() => expenses.reduce((sum, e) => sum + e.amount, 0), [expenses]);
+  const budget = 12000; // Monthly budget
+  const progress = Math.min(totalSpent / budget, 1);
+
+  const categoryTotals = useMemo(() => {
+    const totals: { [key: string]: number } = {};
+    expenses.forEach((e) => {
+      const cat = e.category || 'Others';
+      totals[cat] = (totals[cat] || 0) + e.amount;
     });
+    return Object.entries(totals).sort((a, b) => b[1] - a[1]);
   }, [expenses]);
 
-  const totalExpense = expenses.reduce((sum, e) => sum + e.amount, 0);
-  const totalSalary = 15000; // Mock salary
-
-  const handleCategoryPress = (cat: any) => {
-    setSelectedCategory(cat);
-    setIsDrawerVisible(true);
-  };
+  const chartData = useMemo(() => {
+    const colors = ['#4B2E83', '#6C4AB6', '#F48C57', '#10B981', '#EF4444', '#8A8A8A'];
+    return categoryTotals.slice(0, 5).map(([name, value], index) => ({
+      name,
+      value: (value / totalSpent) * 100,
+      color: colors[index % colors.length],
+      amount: value
+    }));
+  }, [categoryTotals, totalSpent]);
 
   return (
     <View style={{ flex: 1, backgroundColor: '#F5F6FA', paddingTop: insets.top }}>
-      {/* Calendar Strip */}
-      <View className="px-5 py-md">
-        <Text className="text-text-dark font-bold text-lg mb-md">February 2026</Text>
-        <View className="flex-row justify-between">
-          {DATES.map((date, i) => (
-            <TouchableOpacity 
-              key={date} 
-              onPress={() => setSelectedDate(date)}
-              className={`items-center py-2 px-3 rounded-2xl ${selectedDate === date ? 'bg-primary-accent' : ''}`}
-            >
-              <Text className={`text-[12px] ${selectedDate === date ? 'text-white' : 'text-text-grey'}`}>{DAYS[i]}</Text>
-              <Text className={`text-[16px] font-bold mt-1 ${selectedDate === date ? 'text-white' : 'text-text-dark'}`}>{date}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </View>
-
       <ScrollView className="flex-1 px-5" showsVerticalScrollIndicator={false}>
-        {/* Summary Cards */}
-        <View className="flex-row gap-4 mb-lg">
-          <View className="flex-1 bg-white p-md rounded-2xl shadow-sm" style={{ elevation: 1 }}>
-            <Text className="text-text-grey text-[12px] font-medium">Total Salary</Text>
-            <Text className="text-success font-bold text-[20px] mt-1">${totalSalary.toLocaleString()}</Text>
-          </View>
-          <View className="flex-1 bg-white p-md rounded-2xl shadow-sm" style={{ elevation: 1 }}>
-            <Text className="text-text-grey text-[12px] font-medium">Total Expense</Text>
-            <Text className="text-danger font-bold text-[20px] mt-1">-${totalExpense.toLocaleString()}</Text>
-          </View>
+        <View className="py-md">
+          <Text className="text-text-dark font-bold text-[22px]">Analytics</Text>
         </View>
 
-        {/* Category Expense Cards */}
-        <Text className="text-text-dark font-bold text-base mb-md">Categories</Text>
-        {categoryData.map((cat, index) => (
-          <TouchableOpacity 
-            key={cat.name} 
-            activeOpacity={0.7}
-            onPress={() => handleCategoryPress(cat)}
-            className="bg-white p-md rounded-2xl shadow-sm mb-md"
-            style={{ elevation: 1 }}
-          >
-            <View className="flex-row items-center justify-between mb-3">
-              <View className="flex-row items-center">
-                <View className="w-10 h-10 rounded-full bg-bg-light items-center justify-center mr-3">
-                  <Ionicons name={cat.icon as any} size={20} color="#5B2EFF" />
-                </View>
-                <View>
-                  <Text className="text-text-dark font-semibold">{cat.name}</Text>
-                  <Text className="text-text-grey text-[12px]">Budget: ${cat.budget}</Text>
-                </View>
-              </View>
-              <Text className="text-text-dark font-bold">${cat.total.toLocaleString()}</Text>
+        {/* Monthly Summary */}
+        <Animated.View entering={FadeInDown.delay(100)} className="bg-white p-lg rounded-3xl shadow-sm mb-lg">
+          <Text className="text-text-grey text-[14px]">You have spent</Text>
+          <Text className="text-text-dark font-bold text-[28px] mt-1">
+            ${totalSpent.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+          </Text>
+          <Text className="text-text-grey text-[14px] mt-1">this month</Text>
+          
+          <View className="mt-lg">
+            <View className="flex-row justify-between mb-2">
+              <Text className="text-text-dark font-semibold text-[12px]">Monthly Progress</Text>
+              <Text className="text-text-grey text-[12px]">{Math.round(progress * 100)}%</Text>
             </View>
-            
             <View className="h-2 bg-gray-100 rounded-full overflow-hidden">
               <View 
-                style={{ width: `${Math.min((cat.total / cat.budget) * 100, 100)}%` }} 
-                className={`h-full rounded-full ${cat.total > cat.budget ? 'bg-danger' : 'bg-primary'}`} 
+                style={{ width: `${progress * 100}%` }} 
+                className={`h-full rounded-full ${progress > 0.9 ? 'bg-danger' : 'bg-primary-accent'}`} 
               />
             </View>
-            <Text className="text-right text-text-grey text-[10px] mt-1">
-              {Math.round((cat.total / cat.budget) * 100)}% of budget
-            </Text>
-          </TouchableOpacity>
-        ))}
-        <View className="h-20" />
+          </View>
+        </Animated.View>
+
+        {/* Category Pie Chart */}
+        <Animated.View entering={FadeInDown.delay(200)} className="items-center py-4 mb-lg">
+          <DonutChart 
+            size={240} 
+            strokeWidth={14} 
+            data={chartData} 
+            totalAmount={totalSpent.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+            trend="12% less"
+          />
+        </Animated.View>
+
+        {/* Distribution List */}
+        <Animated.View entering={FadeInDown.delay(300)}>
+          <Text className="text-text-dark font-bold text-base mb-md">Category Distribution</Text>
+          {chartData.map((item, index) => (
+            <View key={item.name} className="bg-white p-md rounded-2xl shadow-sm mb-md flex-row items-center justify-between">
+              <View className="flex-row items-center">
+                <View 
+                  className="w-10 h-10 rounded-full items-center justify-center mr-3"
+                  style={{ backgroundColor: item.color + '15' }}
+                >
+                  <Ionicons name={getCategoryIcon(item.name) as any} size={18} color={item.color} />
+                </View>
+                <View>
+                  <Text className="text-text-dark font-semibold capitalize">{item.name}</Text>
+                  <Text className="text-text-grey text-[11px]">{item.value.toFixed(1)}% of total</Text>
+                </View>
+              </View>
+              <Text className="text-text-dark font-bold">${item.amount.toLocaleString()}</Text>
+            </View>
+          ))}
+        </Animated.View>
+
+        <View className="h-32" />
       </ScrollView>
-
-      <CategoryBottomSheet 
-        isVisible={isDrawerVisible} 
-        onClose={() => setIsDrawerVisible(false)} 
-        onTransactionPress={(transaction) => setSelectedTransaction(transaction)}
-        category={selectedCategory}
-        expenses={expenses}
-      />
-
-      <TransactionDetailSheet 
-        isVisible={!!selectedTransaction}
-        onClose={() => setSelectedTransaction(null)}
-        transaction={selectedTransaction}
-      />
     </View>
   );
 }
+
+const getCategoryIcon = (category: string) => {
+  switch (category.toLowerCase()) {
+    case 'food': return 'restaurant';
+    case 'transport': return 'car';
+    case 'shopping': return 'cart';
+    case 'bills': return 'receipt';
+    case 'electronics': return 'laptop';
+    case 'clothing': return 'shirt';
+    default: return 'apps';
+  }
+};
