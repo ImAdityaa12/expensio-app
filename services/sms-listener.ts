@@ -21,6 +21,80 @@ async function getCategoryForMerchant(userId: string, merchantName: string): Pro
   }
 }
 
+async function findBestCategoryMatch(userId: string, suggestedCategory: string): Promise<string | null> {
+  try {
+    // First, try exact match (case-insensitive)
+    const { data: exactMatch } = await supabase
+      .from('categories')
+      .select('id, name')
+      .eq('user_id', userId)
+      .ilike('name', suggestedCategory)
+      .limit(1)
+      .single();
+    
+    if (exactMatch) {
+      console.log('📨 ✅ Exact category match found:', exactMatch.name);
+      return exactMatch.id;
+    }
+
+    // If no exact match, try fuzzy matching with common variations
+    const categoryMappings: { [key: string]: string[] } = {
+      'food': ['food', 'restaurant', 'dining', 'cafe', 'eatery', 'meal', 'grocery', 'groceries'],
+      'transport': ['transport', 'transportation', 'travel', 'taxi', 'uber', 'ola', 'fuel', 'petrol', 'gas'],
+      'shopping': ['shopping', 'shop', 'store', 'retail', 'purchase', 'buy'],
+      'bills': ['bills', 'bill', 'utility', 'utilities', 'electricity', 'water', 'internet', 'phone', 'mobile'],
+      'entertainment': ['entertainment', 'movie', 'cinema', 'game', 'gaming', 'music', 'streaming'],
+      'healthcare': ['healthcare', 'health', 'medical', 'hospital', 'doctor', 'pharmacy', 'medicine'],
+      'travel': ['travel', 'trip', 'vacation', 'hotel', 'flight', 'booking', 'airline'],
+      'others': ['others', 'other', 'miscellaneous', 'misc', 'general']
+    };
+
+    // Get all user categories
+    const { data: allCategories } = await supabase
+      .from('categories')
+      .select('id, name')
+      .eq('user_id', userId);
+
+    if (!allCategories || allCategories.length === 0) {
+      return null;
+    }
+
+    console.log('📨 Available categories:', allCategories.map(c => c.name).join(', '));
+
+    // Try to find a match using the mappings
+    const lowerSuggested = suggestedCategory.toLowerCase().trim();
+    
+    for (const category of allCategories) {
+      const categoryNameLower = category.name.toLowerCase().trim();
+      
+      // Direct match on lowercase names
+      if (categoryNameLower === lowerSuggested) {
+        console.log('📨 ✅ Direct lowercase match found:', category.name);
+        return category.id;
+      }
+      
+      // Check against keyword mappings
+      const keywords = categoryMappings[categoryNameLower] || [categoryNameLower];
+      
+      // Check if suggested category matches any keyword
+      if (keywords.some(keyword => 
+        lowerSuggested.includes(keyword) || 
+        keyword.includes(lowerSuggested) ||
+        lowerSuggested === keyword
+      )) {
+        console.log('📨 ✅ Fuzzy category match found:', category.name, 'for suggestion:', suggestedCategory);
+        return category.id;
+      }
+    }
+
+    console.log('📨 ⚠️ No category match found for:', suggestedCategory);
+    return null;
+  } catch (error) {
+    console.error('📨 Error finding category match:', error);
+    return null;
+  }
+}
+
 async function getDefaultCategory(userId: string): Promise<string | null> {
   try {
     const { data } = await supabase
@@ -115,29 +189,26 @@ async function processSmsMessage(message: string, sender: string, timestamp: num
       return;
     }
 
-    // Get category ID from suggested category name
+    // Get category ID from suggested category name with improved matching
     let categoryId = null;
     if (parsed.category) {
-      const { data: categoryData } = await supabase
-        .from('categories')
-        .select('id')
-        .eq('user_id', user.id)
-        .ilike('name', parsed.category)
-        .limit(1)
-        .single();
-      
-      categoryId = categoryData?.id;
+      console.log('📨 Trying to match category:', parsed.category);
+      categoryId = await findBestCategoryMatch(user.id, parsed.category);
     }
 
     // If no category found, try merchant mapping
     if (!categoryId) {
+      console.log('📨 Trying merchant mapping for:', parsed.merchant);
       categoryId = await getCategoryForMerchant(user.id, parsed.merchant);
     }
 
     // Default to "Others" if still no category
     if (!categoryId) {
+      console.log('📨 Using default "Others" category');
       categoryId = await getDefaultCategory(user.id);
     }
+
+    console.log('📨 Final category ID:', categoryId);
 
     // Check for duplicate transaction (same amount, merchant, and date)
     const { data: existingTransaction } = await supabase

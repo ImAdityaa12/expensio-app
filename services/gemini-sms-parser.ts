@@ -22,7 +22,7 @@ export async function parseSmsWithGemini(smsMessage: string): Promise<ParsedSmsD
       model: 'gemini-2.5-flash'
     });
 
-    const prompt = `You are an expert at parsing bank transaction SMS messages. Analyze the following SMS and extract transaction details.
+    const prompt = `You are an expert at parsing bank transaction SMS messages from Indian banks. Analyze the following SMS and extract transaction details.
 
 SMS Message: "${smsMessage}"
 
@@ -32,22 +32,42 @@ Extract the following information and respond ONLY with valid JSON (no markdown,
   "amount": number (just the number, no currency symbol),
   "merchant": "merchant or payee name",
   "transactionType": "DEBIT" or "CREDIT",
-  "category": "suggested category like Food, Transport, Shopping, Bills, Entertainment, Healthcare, Travel, Others"
+  "category": "one of: Food, Transport, Shopping, Bills, Entertainment, Healthcare, Travel, Others"
 }
 
-Rules:
-- If this is NOT a transaction SMS (like OTP, promotional, etc), set isTransaction to false
-- For amount, extract only the numeric value
-- For merchant, extract the business/person name (not account numbers)
-- transactionType should be DEBIT for payments/debits, CREDIT for deposits/credits
-- Suggest the most appropriate category based on merchant name
-- Return valid JSON only, no additional text`;
+Category Guidelines:
+- Food: Restaurants, cafes, food delivery (Swiggy, Zomato, McDonald's, KFC, Dominos, etc.)
+- Transport: Uber, Ola, fuel stations, parking, metro, bus, auto
+- Shopping: Amazon, Flipkart, retail stores, clothing, electronics, online shopping
+- Bills: Electricity, water, internet, mobile recharge, DTH, gas cylinder
+- Entertainment: Netflix, Prime Video, Hotstar, movie tickets, gaming, music
+- Healthcare: Hospitals, pharmacies, medical stores, doctor fees, health insurance
+- Travel: Hotels, flights, train tickets, travel bookings, vacation expenses
+- Others: ATM withdrawals, bank charges, or anything that doesn't fit above categories
+
+Merchant Name Rules:
+- Extract the actual business name (e.g., "Swiggy", "Amazon", "Uber")
+- Remove generic terms like "at", "from", "to"
+- Don't include account numbers or transaction IDs
+- Keep it short and recognizable
+
+Transaction Type Rules:
+- DEBIT: Money going out (debited, spent, paid, withdrawn, used for)
+- CREDIT: Money coming in (credited, received, deposited, refund, cashback)
+
+Important:
+- If this is NOT a transaction SMS (OTP, promotional, alerts), set isTransaction to false
+- Return ONLY valid JSON, no markdown formatting, no code blocks
+- Amount should be a number without currency symbols`;
 
     const result = await model.generateContent(prompt);
     const response = result.response;
-    const text = response.text().trim();
+    let text = response.text().trim();
     
     console.log('🤖 Gemini raw response:', text);
+
+    // Remove markdown code blocks if present
+    text = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
 
     // Parse JSON response
     const parsed = JSON.parse(text);
