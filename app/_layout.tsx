@@ -17,7 +17,14 @@ import "../global.css";
 import { supabase } from '../lib/supabase';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { registerBackgroundSyncTask, unregisterBackgroundSyncTask } from '@/services/background-sms-sync';
 import { startSmsListener, stopSmsListener } from '@/services/sms-listener';
+import { registerSmsHeadlessTask } from '../services/sms-headless-task';
+
+// Register headless task for background SMS processing
+if (Platform.OS === 'android') {
+  registerSmsHeadlessTask();
+}
 
 export const unstable_settings = {
   anchor: '(tabs)',
@@ -65,6 +72,7 @@ export default function RootLayout() {
       console.log('🚀 Starting SMS listener initialization...');
       console.log('🚀🚀🚀 ========================================');
       
+      // Start real-time SMS listener
       startSmsListener().then((started) => {
         if (started) {
           console.log('🚀 ✅✅✅ SMS LISTENER IS NOW ACTIVE!');
@@ -83,9 +91,19 @@ export default function RootLayout() {
         console.log('🚀 Run: npx expo prebuild --clean && npx expo run:android');
       });
 
+      // Register background sync task
+      registerBackgroundSyncTask().then((registered) => {
+        if (registered) {
+          console.log('🚀 ✅ Background sync task registered');
+        } else {
+          console.log('🚀 ⚠️ Background sync task registration failed');
+        }
+      });
+
       return () => {
-        console.log('🚀 Cleaning up SMS listener...');
+        console.log('🚀 Cleaning up SMS listener and background tasks...');
         stopSmsListener();
+        unregisterBackgroundSyncTask();
       };
     } else {
       console.log('🚀 No user session - SMS listener not started');

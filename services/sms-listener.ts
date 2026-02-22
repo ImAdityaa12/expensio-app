@@ -50,12 +50,41 @@ async function processSmsMessage(message: string, sender: string, timestamp: num
       return;
     }
 
+    // Check for duplicate SMS (within last 5 minutes with same content)
+    const fiveMinutesAgo = new Date(timestamp - 5 * 60 * 1000).toISOString();
+    const { data: existingSms } = await supabase
+      .from('sms_logs')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('sender', sender)
+      .eq('message', message)
+      .gte('received_at', fiveMinutesAgo)
+      .limit(1);
+
+    if (existingSms && existingSms.length > 0) {
+      console.log('📨 ⚠️ Duplicate SMS detected, skipping');
+      return;
+    }
+
     // Parse SMS with Gemini AI
     console.log('📨 Parsing SMS with Gemini AI...');
     const parsed = await parseSmsWithGemini(message);
     
     if (!parsed || !parsed.isTransaction) {
       console.log('📨 Not a transaction SMS, skipping');
+      
+      // Still log non-transaction SMS for debugging
+      await supabase
+        .from('sms_logs')
+        .insert({
+          user_id: user.id,
+          sender: sender,
+          message: message,
+          received_at: new Date(timestamp).toISOString(),
+          parsed: false,
+          confidence_score: 0,
+        });
+      
       return;
     }
 
@@ -68,7 +97,7 @@ async function processSmsMessage(message: string, sender: string, timestamp: num
     });
 
     // Save SMS log
-    const { data: smsLog } = await supabase
+    const { data: smsLog, error: smsLogError } = await supabase
       .from('sms_logs')
       .insert({
         user_id: user.id,
@@ -81,8 +110,8 @@ async function processSmsMessage(message: string, sender: string, timestamp: num
       .select()
       .single();
 
-    if (!smsLog) {
-      console.log('📨 Failed to save SMS log');
+    if (smsLogError || !smsLog) {
+      console.log('📨 Failed to save SMS log:', smsLogError);
       return;
     }
 
@@ -108,6 +137,21 @@ async function processSmsMessage(message: string, sender: string, timestamp: num
     // Default to "Others" if still no category
     if (!categoryId) {
       categoryId = await getDefaultCategory(user.id);
+    }
+
+    // Check for duplicate transaction (same amount, merchant, and date)
+    const { data: existingTransaction } = await supabase
+      .from('transactions')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('amount', parsed.amount)
+      .eq('merchant_name', parsed.merchant)
+      .eq('transaction_date', parsed.date)
+      .limit(1);
+
+    if (existingTransaction && existingTransaction.length > 0) {
+      console.log('📨 ⚠️ Duplicate transaction detected, skipping');
+      return;
     }
 
     // Create transaction

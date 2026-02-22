@@ -20,12 +20,7 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "permissions": [
-        "RECEIVE_SMS",
-        "READ_SMS",
-        "RECEIVE_SMS",
-        "READ_SMS"
-      ],
+      "permissions": ["RECEIVE_SMS", "READ_SMS", "RECEIVE_BOOT_COMPLETED"],
       "package": "com.adityaa1291.expensio"
     },
     "web": {
