@@ -1,23 +1,23 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import {
+    Poppins_300Light,
+    Poppins_400Regular,
+    Poppins_500Medium,
+    Poppins_600SemiBold,
+    Poppins_700Bold,
+    useFonts
+} from '@expo-google-fonts/poppins';
+import { DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import { Session } from '@supabase/supabase-js';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
+import { ActivityIndicator, Platform, View } from 'react-native';
 import 'react-native-reanimated';
 import "../global.css";
 import { supabase } from '../lib/supabase';
-import { Session } from '@supabase/supabase-js';
-import Auth from '../components/Auth';
-import { View, ActivityIndicator } from 'react-native';
-import { 
-  useFonts, 
-  Poppins_300Light, 
-  Poppins_400Regular, 
-  Poppins_500Medium, 
-  Poppins_600SemiBold, 
-  Poppins_700Bold 
-} from '@expo-google-fonts/poppins';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { startSmsListener, stopSmsListener } from '@/services/sms-listener';
 
 export const unstable_settings = {
   anchor: '(tabs)',
@@ -55,6 +55,42 @@ export default function RootLayout() {
       setSession(session);
     });
   }, []);
+
+  // Start SMS listener when user is logged in
+  useEffect(() => {
+    if (session) {
+      console.log('🚀🚀🚀 ========================================');
+      console.log('🚀 APP INITIALIZED WITH USER SESSION');
+      console.log('🚀 Platform:', Platform.OS);
+      console.log('🚀 Starting SMS listener initialization...');
+      console.log('🚀🚀🚀 ========================================');
+      
+      startSmsListener().then((started) => {
+        if (started) {
+          console.log('🚀 ✅✅✅ SMS LISTENER IS NOW ACTIVE!');
+          console.log('🚀 Waiting for incoming SMS messages...');
+        } else {
+          console.log('🚀 ❌❌❌ SMS LISTENER FAILED TO START');
+          console.log('🚀 This usually means:');
+          console.log('🚀 1. Running in Expo Go (native modules not supported)');
+          console.log('🚀 2. Permission was denied');
+          console.log('🚀 3. Not running on Android');
+        }
+      }).catch((error) => {
+        console.error('🚀 ❌ SMS listener error:', error);
+        console.log('🚀 If you see "null is not an object", you are likely in Expo Go');
+        console.log('🚀 You need to build a development build:');
+        console.log('🚀 Run: npx expo prebuild --clean && npx expo run:android');
+      });
+
+      return () => {
+        console.log('🚀 Cleaning up SMS listener...');
+        stopSmsListener();
+      };
+    } else {
+      console.log('🚀 No user session - SMS listener not started');
+    }
+  }, [session]);
 
   if (!fontsLoaded || loading) {
     return (

@@ -22,8 +22,11 @@
       "predictiveBackGestureEnabled": false,
       "permissions": [
         "RECEIVE_SMS",
+        "READ_SMS",
+        "RECEIVE_SMS",
         "READ_SMS"
-      ]
+      ],
+      "package": "com.adityaa1291.expensio"
     },
     "web": {
       "output": "static",
