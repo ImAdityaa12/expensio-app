@@ -1,7 +1,7 @@
 import { PermissionsAndroid, Platform } from 'react-native';
 import SmsListener from 'react-native-android-sms-listener';
 import { supabase } from '../lib/supabase';
-import { parseSms } from './sms-parser';
+import { parseSmsWithGemini } from './gemini-sms-parser';
 
 let smsSubscription: any = null;
 
@@ -50,18 +50,20 @@ async function processSmsMessage(message: string, sender: string, timestamp: num
       return;
     }
 
-    // Parse SMS
-    console.log('📨 Parsing SMS...');
-    const parsed = parseSms(message);
+    // Parse SMS with Gemini AI
+    console.log('📨 Parsing SMS with Gemini AI...');
+    const parsed = await parseSmsWithGemini(message);
     
-    if (!parsed) {
+    if (!parsed || !parsed.isTransaction) {
       console.log('📨 Not a transaction SMS, skipping');
       return;
     }
 
-    console.log('📨 ✅ Parsed:', {
+    console.log('📨 ✅ Gemini parsed:', {
       amount: parsed.amount,
       merchant: parsed.merchant,
+      type: parsed.transactionType,
+      category: parsed.category,
       date: parsed.date
     });
 
@@ -74,7 +76,7 @@ async function processSmsMessage(message: string, sender: string, timestamp: num
         message: message,
         received_at: new Date(timestamp).toISOString(),
         parsed: true,
-        confidence_score: 0.75, // Regex parser confidence
+        confidence_score: 0.95, // Gemini AI confidence
       })
       .select()
       .single();
@@ -84,9 +86,26 @@ async function processSmsMessage(message: string, sender: string, timestamp: num
       return;
     }
 
-    // Get category (default to Others since regex parser doesn't suggest categories)
-    let categoryId = await getCategoryForMerchant(user.id, parsed.merchant);
-    
+    // Get category ID from suggested category name
+    let categoryId = null;
+    if (parsed.category) {
+      const { data: categoryData } = await supabase
+        .from('categories')
+        .select('id')
+        .eq('user_id', user.id)
+        .ilike('name', parsed.category)
+        .limit(1)
+        .single();
+      
+      categoryId = categoryData?.id;
+    }
+
+    // If no category found, try merchant mapping
+    if (!categoryId) {
+      categoryId = await getCategoryForMerchant(user.id, parsed.merchant);
+    }
+
+    // Default to "Others" if still no category
     if (!categoryId) {
       categoryId = await getDefaultCategory(user.id);
     }
@@ -97,7 +116,7 @@ async function processSmsMessage(message: string, sender: string, timestamp: num
       .insert({
         user_id: user.id,
         amount: parsed.amount,
-        type: 'DEBIT', // Regex parser only detects debits
+        type: parsed.transactionType,
         merchant_name: parsed.merchant,
         description: `Auto-synced from ${sender}`,
         transaction_date: parsed.date,
@@ -114,6 +133,8 @@ async function processSmsMessage(message: string, sender: string, timestamp: num
     console.log('📨 ✅✅✅ Transaction created successfully!');
     console.log('📨 Amount:', parsed.amount);
     console.log('📨 Merchant:', parsed.merchant);
+    console.log('📨 Type:', parsed.transactionType);
+    console.log('📨 Category:', parsed.category);
     
   } catch (error) {
     console.error('📨 Error processing SMS:', error);
