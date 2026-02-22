@@ -1,12 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
-import { useRouter } from 'expo-router';
-import { useExpenses } from '../hooks/use-expenses';
 import { Ionicons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Animated, { FadeInDown } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
+import { useRouter } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, Alert, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NumericKeypad } from '../components/NumericKeypad';
+import { useExpenses } from '../hooks/use-expenses';
 
 export default function ModalScreen() {
   const router = useRouter();
@@ -82,7 +82,7 @@ export default function ModalScreen() {
           onPress={() => router.back()}
           className="w-9 h-9 rounded-full items-center justify-center bg-white shadow-sm"
         >
-          <Ionicons name="close" size={18} color="#1E1E1E" />
+          <Ionicons name="close" size={20} color="#1E1E1E" />
         </TouchableOpacity>
         <Text className="text-text-dark font-bold text-[16px]">New Expense</Text>
         <View className="w-9" />
@@ -122,11 +122,13 @@ export default function ModalScreen() {
                       setSelectedCategoryId(cat.id);
                     }}
                     style={{ width: '31.5%', marginBottom: 10 }}
-                    className={`aspect-[1.1] rounded-xl items-center justify-center border transition-all duration-200 ${
+                    className={`aspect-[1.1] rounded-xl items-center justify-center border ${
                       isActive ? 'border-primary bg-primary/10' : 'border-gray-200 bg-white'
                     }`}
                   >
-                    <Ionicons name={cat.icon as any || 'pricetag'} size={26} color={isActive ? '#4B2E83' : '#8A8A8A'} />
+                    <View style={{ width: 24, height: 24, alignItems: 'center', justifyContent: 'center' }}>
+                      <Ionicons name={cat.icon as any || 'pricetag'} size={24} color={isActive ? '#4B2E83' : '#8A8A8A'} />
+                    </View>
                     <Text className={`text-[10px] uppercase font-bold mt-1.5 text-center ${isActive ? 'text-primary' : 'text-text-grey'}`}>
                       {cat.name}
                     </Text>
