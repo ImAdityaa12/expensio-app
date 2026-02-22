@@ -5,27 +5,40 @@ export interface ParsedSms {
 }
 
 export function parseSms(message: string): ParsedSms | null {
-  // Example: Rs. 500 debited from A/C XXXX at Swiggy on 18 Feb.
-  // Example: Debited Rs. 200.00 from A/C XX1234 on 19-02-2026 for Swiggy.
-  
+  // Check if it's a debit message
+  const isDebit = /debited|spent|payment|paid/i.test(message);
+  if (!isDebit) return null;
+
+  // Extract amount
   const amountRegex = /(?:Rs\.?|INR)\s?(\d+(?:\.\d{1,2})?)/i;
-  const merchantRegex = /at\s+([^.]+)\s+on/i;
-  const alternativeMerchantRegex = /for\s+([^.]+)/i;
-  
   const amountMatch = message.match(amountRegex);
   if (!amountMatch) return null;
   
   const amount = parseFloat(amountMatch[1]);
   
+  // Extract merchant - try multiple patterns
   let merchant = 'Unknown Merchant';
-  const merchantMatch = message.match(merchantRegex) || message.match(alternativeMerchantRegex);
-  if (merchantMatch) {
-    merchant = merchantMatch[1].trim();
-  }
   
-  // Basic check if it's a debit message
-  const isDebit = /debited|spent|payment|paid/i.test(message);
-  if (!isDebit) return null;
+  // Pattern 1: "MERCHANT credited" (ICICI format)
+  const creditedPattern = /;\s*([A-Z][A-Z\s]+)\s+credited/i;
+  const creditedMatch = message.match(creditedPattern);
+  if (creditedMatch) {
+    merchant = creditedMatch[1].trim();
+  } else {
+    // Pattern 2: "at MERCHANT on"
+    const atPattern = /at\s+([^.]+?)\s+on/i;
+    const atMatch = message.match(atPattern);
+    if (atMatch) {
+      merchant = atMatch[1].trim();
+    } else {
+      // Pattern 3: "for MERCHANT"
+      const forPattern = /for\s+([^.]+?)(?:\.|$|UPI)/i;
+      const forMatch = message.match(forPattern);
+      if (forMatch) {
+        merchant = forMatch[1].trim();
+      }
+    }
+  }
 
   return {
     amount,

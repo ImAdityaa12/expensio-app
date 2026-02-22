@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CalendarStrip } from '../../components/CalendarStrip';
@@ -9,17 +9,52 @@ import { useExpenses } from '../../hooks/use-expenses';
 import { Transaction } from '../../types/schema';
 
 export default function ExpensesScreen() {
-  const { transactions, categories, currencySymbol } = useExpenses();
+  const { transactions, categories, currencySymbol, fetchData, loading } = useExpenses();
   const insets = useSafeAreaInsets();
   
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [selectedCategory, setSelectedCategory] = useState<any>(null);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [isDrawerVisible, setIsDrawerVisible] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleRefresh = async () => {
+    console.log('🔄 Refreshing transactions...');
+    setRefreshing(true);
+    await fetchData();
+    console.log('🔄 Refresh complete');
+    setRefreshing(false);
+  };
+
+  // Log when transactions change
+  useEffect(() => {
+    console.log('📱 Transactions updated, count:', transactions.length);
+  }, [transactions]);
 
   const filteredExpenses = useMemo(() => {
-    const dateStr = selectedDate.toISOString().split('T')[0];
-    return transactions.filter(e => e.transaction_date.split('T')[0] === dateStr);
+    // Get date in local timezone
+    const year = selectedDate.getFullYear();
+    const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+    const day = String(selectedDate.getDate()).padStart(2, '0');
+    const dateStr = `${year}-${month}-${day}`;
+    
+    const filtered = transactions.filter(e => {
+      // Extract date part from transaction_date (handles both ISO and timezone formats)
+      const transactionDateStr = e.transaction_date.split('T')[0];
+      return transactionDateStr === dateStr;
+    });
+    
+    console.log('📅 Selected date:', dateStr);
+    console.log('📅 Filtered transactions:', filtered.length);
+    filtered.forEach(t => {
+      console.log('📅 Transaction:', {
+        merchant: t.merchant_name,
+        amount: t.amount,
+        category_id: t.category_id,
+        date: t.transaction_date.split('T')[0]
+      });
+    });
+    return filtered;
   }, [transactions, selectedDate]);
 
   // Calculate daily income and expenses for selected date
@@ -34,11 +69,44 @@ export default function ExpensesScreen() {
   const dailyBalance = useMemo(() => dailyIncome - dailyExpense, [dailyIncome, dailyExpense]);
 
   const categoryData = useMemo(() => {
+    console.log('📊 Calculating category data for date:', selectedDate.toISOString().split('T')[0]);
+    console.log('📊 Filtered expenses count:', filteredExpenses.length);
+    console.log('📊 Available categories:', categories.map(c => `${c.name}(${c.id})`).join(', '));
+    
+    if (filteredExpenses.length > 0) {
+      console.log('📊 Sample transaction:', {
+        id: filteredExpenses[0].id,
+        merchant: filteredExpenses[0].merchant_name,
+        category_id: filteredExpenses[0].category_id,
+        categories: filteredExpenses[0].categories
+      });
+    }
+    
     // Only show categories that have transactions on the selected date
     const categoriesWithData = categories.map(cat => {
-      const total = filteredExpenses
-        .filter(e => e.type === 'DEBIT' && e.categories?.name === cat.name)
-        .reduce((sum, e) => sum + e.amount, 0);
+      const categoryExpenses = filteredExpenses.filter(e => {
+        // Check both category_id and joined categories object
+        const matchesById = e.category_id === cat.id;
+        const matchesByJoin = e.categories?.id === cat.id;
+        const matches = e.type === 'DEBIT' && (matchesById || matchesByJoin);
+        
+        if (matches) {
+          console.log('📊 Match found:', {
+            category: cat.name,
+            merchant: e.merchant_name,
+            amount: e.amount,
+            matchType: matchesById ? 'by_id' : 'by_join'
+          });
+        }
+        
+        return matches;
+      });
+      
+      const total = categoryExpenses.reduce((sum, e) => sum + e.amount, 0);
+      
+      if (total > 0) {
+        console.log('📊 Category with data:', cat.name, 'ID:', cat.id, 'Total:', total, 'Transactions:', categoryExpenses.length);
+      }
       
       return { 
         name: cat.name, 
@@ -49,8 +117,9 @@ export default function ExpensesScreen() {
       };
     }).filter(c => c.total > 0); // Only show categories with expenses
     
+    console.log('📊 Final categories with data:', categoriesWithData.map(c => `${c.name}(${c.total})`).join(', '));
     return categoriesWithData;
-  }, [filteredExpenses, categories]);
+  }, [filteredExpenses, categories, selectedDate]);
 
   const handleCategoryPress = (cat: any) => {
     setSelectedCategory(cat);
@@ -65,11 +134,26 @@ export default function ExpensesScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: '#F5F6FA', paddingTop: insets.top }}>
       {/* Header */}
-      <View className="px-5 py-4">
-        <Text className="text-text-dark font-bold text-[22px]">Expenses</Text>
-        <Text className="text-text-grey text-[12px] mt-1">
-          {selectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
-        </Text>
+      <View className="px-5 py-4 flex-row items-center justify-between">
+        <View className="flex-1">
+          <Text className="text-text-dark font-bold text-[22px]">Expenses</Text>
+          <Text className="text-text-grey text-[12px] mt-1">
+            {selectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
+          </Text>
+        </View>
+        <TouchableOpacity
+          onPress={handleRefresh}
+          disabled={refreshing}
+          className="w-10 h-10 rounded-full items-center justify-center"
+          style={{ backgroundColor: refreshing ? '#E5E7EB' : '#F3F4F6' }}
+        >
+          <Ionicons 
+            name="refresh" 
+            size={20} 
+            color={refreshing ? '#9CA3AF' : '#374151'} 
+            style={{ transform: [{ rotate: refreshing ? '360deg' : '0deg' }] }}
+          />
+        </TouchableOpacity>
       </View>
 
       {/* Calendar Strip */}
