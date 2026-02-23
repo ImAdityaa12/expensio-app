@@ -1,9 +1,33 @@
--- ============================================
--- MIGRATION SCRIPT - Run this on your existing database
--- ============================================
--- Note: expenses table already exists, so we're adding new tables
+create table public.expenses (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references auth.users not null,
+  amount decimal not null,
+  merchant text not null,
+  category text not null,
+  date timestamp with time zone default now() not null,
+  source text check (source in ('sms', 'manual')) not null,
+  note text,
+  created_at timestamp with time zone default now() not null
+);
 
--- 1️⃣ Profiles Table (Extends auth.users with additional user data)
+alter table public.expenses enable row level security;
+
+create policy "Users can view their own expenses"
+  on public.expenses for select
+  using ( auth.uid() = user_id );
+
+create policy "Users can insert their own expenses"
+  on public.expenses for insert
+  with check ( auth.uid() = user_id );
+
+create policy "Users can update their own expenses"
+  on public.expenses for update
+  using ( auth.uid() = user_id );
+
+create policy "Users can delete their own expenses"
+  on public.expenses for delete
+  using ( auth.uid() = user_id );
+
 create table if not exists public.profiles (
   id uuid references auth.users(id) on delete cascade primary key,
   name varchar(255),
@@ -13,7 +37,6 @@ create table if not exists public.profiles (
   updated_at timestamp with time zone default now() not null
 );
 
--- 2️⃣ Accounts Table (User can have multiple bank accounts/wallets)
 create table if not exists public.accounts (
   id uuid default gen_random_uuid() primary key,
   user_id uuid references auth.users(id) on delete cascade not null,
@@ -24,7 +47,6 @@ create table if not exists public.accounts (
   created_at timestamp with time zone default now() not null
 );
 
--- 3️⃣ Categories Table (User-defined categories)
 create table if not exists public.categories (
   id uuid default gen_random_uuid() primary key,
   user_id uuid references auth.users(id) on delete cascade not null,
@@ -35,7 +57,6 @@ create table if not exists public.categories (
   created_at timestamp with time zone default now() not null
 );
 
--- 4️⃣ Category Limits Table
 create table if not exists public.category_limits (
   id uuid default gen_random_uuid() primary key,
   user_id uuid references auth.users(id) on delete cascade not null,
@@ -44,11 +65,9 @@ create table if not exists public.category_limits (
   period_type text check (period_type in ('DAILY', 'WEEKLY', 'MONTHLY')) not null,
   start_date date not null,
   end_date date,
-  created_at timestamp with time zone default now() not null,
-  unique(user_id, category_id)
+  created_at timestamp with time zone default now() not null
 );
 
--- 5️⃣ Transactions Table ⭐ (Main Table - will eventually replace expenses)
 create table if not exists public.transactions (
   id uuid default gen_random_uuid() primary key,
   user_id uuid references auth.users(id) on delete cascade not null,
@@ -64,7 +83,6 @@ create table if not exists public.transactions (
   created_at timestamp with time zone default now() not null
 );
 
--- 6️⃣ SMS Logs Table (Store raw SMS for debugging & AI classification)
 create table if not exists public.sms_logs (
   id uuid default gen_random_uuid() primary key,
   user_id uuid references auth.users(id) on delete cascade not null,
@@ -76,7 +94,6 @@ create table if not exists public.sms_logs (
   created_at timestamp with time zone default now() not null
 );
 
--- 7️⃣ Merchant Mapping Table (Auto-detect category)
 create table if not exists public.merchant_category_map (
   id uuid default gen_random_uuid() primary key,
   user_id uuid references auth.users(id) on delete cascade not null,
@@ -86,7 +103,17 @@ create table if not exists public.merchant_category_map (
   unique(user_id, merchant_keyword)
 );
 
--- Add foreign key for sms_id in transactions (only if not exists)
+create table if not exists public.category_limits (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references auth.users(id) on delete cascade not null,
+  category_id uuid references public.categories(id) on delete cascade not null,
+  limit_amount decimal(15, 2) not null,
+  period_type text check (period_type in ('DAILY', 'WEEKLY', 'MONTHLY')) not null,
+  start_date date not null,
+  end_date date,
+  created_at timestamp with time zone default now() not null
+);
+
 do $$ 
 begin
   if not exists (
@@ -98,10 +125,6 @@ begin
   end if;
 end $$;
 
--- ============================================
--- ENABLE ROW LEVEL SECURITY
--- ============================================
-
 alter table public.profiles enable row level security;
 alter table public.accounts enable row level security;
 alter table public.categories enable row level security;
@@ -110,11 +133,6 @@ alter table public.transactions enable row level security;
 alter table public.sms_logs enable row level security;
 alter table public.merchant_category_map enable row level security;
 
--- ============================================
--- RLS POLICIES
--- ============================================
-
--- Profiles policies
 drop policy if exists "Users can view their own profile" on public.profiles;
 create policy "Users can view their own profile"
   on public.profiles for select
@@ -130,7 +148,6 @@ create policy "Users can update their own profile"
   on public.profiles for update
   using ( auth.uid() = id );
 
--- Accounts policies
 drop policy if exists "Users can view their own accounts" on public.accounts;
 create policy "Users can view their own accounts"
   on public.accounts for select
@@ -151,7 +168,6 @@ create policy "Users can delete their own accounts"
   on public.accounts for delete
   using ( auth.uid() = user_id );
 
--- Categories policies
 drop policy if exists "Users can view their own categories" on public.categories;
 create policy "Users can view their own categories"
   on public.categories for select
@@ -172,19 +188,27 @@ create policy "Users can delete their own categories"
   on public.categories for delete
   using ( auth.uid() = user_id );
 
--- Category limits policies
 drop policy if exists "Users can view their own category limits" on public.category_limits;
-drop policy if exists "Users can insert their own category limits" on public.category_limits;
-drop policy if exists "Users can update their own category limits" on public.category_limits;
-drop policy if exists "Users can delete their own category limits" on public.category_limits;
+create policy "Users can view their own category limits"
+  on public.category_limits for select
+  using ( auth.uid() = user_id );
 
-create policy "Users can manage their own category limits"
-  on public.category_limits
-  for all
-  using ( auth.uid() = user_id )
+
+drop policy if exists "Users can insert their own category limits" on public.category_limits;
+create policy "Users can insert their own category limits"
+  on public.category_limits for insert
   with check ( auth.uid() = user_id );
 
--- Transactions policies
+drop policy if exists "Users can update their own category limits" on public.category_limits;
+create policy "Users can update their own category limits"
+  on public.category_limits for update
+  using ( auth.uid() = user_id );
+
+drop policy if exists "Users can delete their own category limits" on public.category_limits;
+create policy "Users can delete their own category limits"
+  on public.category_limits for delete
+  using ( auth.uid() = user_id );
+
 drop policy if exists "Users can view their own transactions" on public.transactions;
 create policy "Users can view their own transactions"
   on public.transactions for select
@@ -205,7 +229,6 @@ create policy "Users can delete their own transactions"
   on public.transactions for delete
   using ( auth.uid() = user_id );
 
--- SMS logs policies
 drop policy if exists "Users can view their own SMS logs" on public.sms_logs;
 create policy "Users can view their own SMS logs"
   on public.sms_logs for select
@@ -221,7 +244,6 @@ create policy "Users can update their own SMS logs"
   on public.sms_logs for update
   using ( auth.uid() = user_id );
 
--- Merchant mapping policies
 drop policy if exists "Users can view their own merchant mappings" on public.merchant_category_map;
 create policy "Users can view their own merchant mappings"
   on public.merchant_category_map for select
@@ -242,12 +264,7 @@ create policy "Users can delete their own merchant mappings"
   on public.merchant_category_map for delete
   using ( auth.uid() = user_id );
 
--- ============================================
--- TRIGGERS
--- ============================================
-
--- Trigger to auto-create profile on user signup
-create or replace function public.handle_new_user()
+  create or replace function public.handle_new_user()
 returns trigger as $$
 begin
   insert into public.profiles (id, name, created_at, updated_at)
@@ -262,10 +279,6 @@ create trigger on_auth_user_created
   after insert on auth.users
   for each row execute procedure public.handle_new_user();
 
--- ============================================
--- INDEXES FOR PERFORMANCE
--- ============================================
-
 create index if not exists idx_profiles_id on public.profiles(id);
 create index if not exists idx_accounts_user_id on public.accounts(user_id);
 create index if not exists idx_categories_user_id on public.categories(user_id);
@@ -278,3 +291,26 @@ create index if not exists idx_transactions_date on public.transactions(transact
 create index if not exists idx_sms_logs_user_id on public.sms_logs(user_id);
 create index if not exists idx_merchant_map_user_id on public.merchant_category_map(user_id);
 create index if not exists idx_merchant_map_keyword on public.merchant_category_map(merchant_keyword);
+
+
+CREATE INDEX IF NOT EXISTS idx_sms_logs_received_at ON public.sms_logs(received_at);
+CREATE INDEX IF NOT EXISTS idx_sms_logs_parsed ON public.sms_logs(parsed);
+CREATE INDEX IF NOT EXISTS idx_transactions_source ON public.transactions(source);
+CREATE INDEX IF NOT EXISTS idx_transactions_sms_id ON public.transactions(sms_id);
+
+ALTER TABLE public.category_limits ADD CONSTRAINT category_limits_user_id_category_id_unique UNIQUE (user_id, category_id);
+
+DROP POLICY IF EXISTS "Users can view their own category
+      limits" ON public.category_limits;
+DROP POLICY IF EXISTS "Users can insert their own category
+      limits" ON public.category_limits;
+DROP POLICY IF EXISTS "Users can update their own category
+      limits" ON public.category_limits;
+DROP POLICY IF EXISTS "Users can delete their own category
+      limits" ON public.category_limits;
+
+CREATE POLICY "Users can manage their own category limits"
+ON public.category_limits
+FOR ALL
+USING (auth.uid() = user_id)
+WITH CHECK (auth.uid() = user_id);

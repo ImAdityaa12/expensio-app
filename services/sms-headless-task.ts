@@ -1,6 +1,7 @@
 import { AppRegistry } from 'react-native';
 import { supabase } from '../lib/supabase';
 import { parseSmsWithGemini } from './gemini-sms-parser';
+import { sendLocalNotification } from './notification-service';
 
 // Helper function for category matching
 async function findBestCategoryMatch(userId: string, suggestedCategory: string): Promise<string | null> {
@@ -106,6 +107,71 @@ async function getDefaultCategory(userId: string): Promise<string | null> {
     return data?.id || null;
   } catch {
     return null;
+  }
+}
+
+async function checkAndNotifyCategoryLimit(userId: string, categoryId: string, amount: number) {
+  try {
+    // 1. Fetch category limit for this category
+    const { data: limit } = await supabase
+      .from('category_limits')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('category_id', categoryId)
+      .single();
+
+    if (!limit) return;
+
+    // 2. Calculate start date based on period_type
+    let startDate = new Date();
+    if (limit.period_type === 'DAILY') {
+      startDate.setHours(0, 0, 0, 0);
+    } else if (limit.period_type === 'WEEKLY') {
+      startDate.setDate(startDate.getDate() - startDate.getDay());
+      startDate.setHours(0, 0, 0, 0);
+    } else if (limit.period_type === 'MONTHLY') {
+      startDate.setDate(1);
+      startDate.setHours(0, 0, 0, 0);
+    }
+
+    // 3. Fetch current total for the period
+    const { data: transactions } = await supabase
+      .from('transactions')
+      .select('amount')
+      .eq('user_id', userId)
+      .eq('category_id', categoryId)
+      .eq('type', 'DEBIT')
+      .gte('transaction_date', startDate.toISOString());
+
+    const currentTotal = (transactions || []).reduce((sum, t) => sum + Number(t.amount), 0);
+    
+    if (currentTotal > limit.limit_amount) {
+      const { data: category } = await supabase
+        .from('categories')
+        .select('name')
+        .eq('id', categoryId)
+        .single();
+      
+      const categoryName = category?.name || 'a category';
+      const title = 'Limit Reached! 🚨';
+      const body = `Your ${limit.period_type.toLowerCase()} limit for ${categoryName} has been exceeded. Total: ${currentTotal.toFixed(2)} (Limit: ${limit.limit_amount.toFixed(2)})`;
+      
+      await sendLocalNotification(title, body);
+    } else if (currentTotal > limit.limit_amount * 0.9) {
+      const { data: category } = await supabase
+        .from('categories')
+        .select('name')
+        .eq('id', categoryId)
+        .single();
+      
+      const categoryName = category?.name || 'a category';
+      const title = 'Budget Warning ⚠️';
+      const body = `You have reached 90% of your ${limit.period_type.toLowerCase()} limit for ${categoryName}.`;
+      
+      await sendLocalNotification(title, body);
+    }
+  } catch (error) {
+    console.error('📱 Error checking category limit in background:', error);
   }
 }
 
@@ -246,6 +312,11 @@ const SmsHeadlessTask = async (message: any) => {
     }
 
     console.log('📱 ✅ Transaction created successfully in background!');
+
+    // Check and notify for category limit
+    if (categoryId && parsed.transactionType === 'DEBIT') {
+      await checkAndNotifyCategoryLimit(user.id, categoryId, parsed.amount);
+    }
   } catch (error) {
     console.error('📱 Headless task error:', error);
   }
