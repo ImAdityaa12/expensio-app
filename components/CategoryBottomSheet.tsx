@@ -132,24 +132,26 @@ export const CategoryBottomSheet = ({
             </View>
 
             {isEditingLimit ? (
-              <View className="mt-2 flex-row items-center">
-                <View className="flex-1 flex-row items-center bg-white/5 rounded-xl px-3 mr-2 border border-white/20">
-                  <Text className="text-white/60 mr-1">{currencySymbol}</Text>
+              <View className="mt-4 flex-row items-center">
+                <View className="flex-1 flex-row items-center bg-white/10 rounded-xl px-4 mr-2 border border-white/20 h-12">
+                  <Text className="text-white/60 font-bold text-lg mr-2">{currencySymbol}</Text>
                   <TextInput
                     value={newLimit}
                     onChangeText={setNewLimit}
-                    keyboardType="numeric"
-                    className="flex-1 h-10 text-white font-semibold"
-                    placeholder="Enter limit"
-                    placeholderTextColor="rgba(255,255,255,0.3)"
+                    keyboardType="decimal-pad"
+                    className="flex-1 text-white font-bold text-lg"
+                    placeholder="0"
+                    placeholderTextColor="rgba(255,255,255,0.2)"
                     autoFocus
+                    textAlignVertical="center"
+                    style={{ padding: 0, height: '100%' }}
                   />
                 </View>
-                <TouchableOpacity onPress={handleSaveLimit} className="bg-primary px-4 h-10 rounded-xl justify-center items-center">
+                <TouchableOpacity onPress={handleSaveLimit} className="bg-primary px-5 h-12 rounded-xl justify-center items-center shadow-lg">
                   <Text className="text-white font-bold">Save</Text>
                 </TouchableOpacity>
                 <TouchableOpacity onPress={() => setIsEditingLimit(false)} className="ml-2 w-10 h-10 items-center justify-center">
-                  <Ionicons name="close" size={24} color="white" />
+                  <Ionicons name="close" size={24} color="rgba(255,255,255,0.6)" />
                 </TouchableOpacity>
               </View>
             ) : (
