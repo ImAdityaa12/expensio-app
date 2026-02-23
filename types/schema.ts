@@ -61,6 +61,18 @@ export interface Transaction {
   accounts?: Account | null;
 }
 
+export type TransactionUpdateInput = Partial<Pick<
+  Transaction,
+  | 'account_id'
+  | 'category_id'
+  | 'amount'
+  | 'type'
+  | 'description'
+  | 'merchant_name'
+  | 'transaction_date'
+  | 'source'
+>>;
+
 export interface SmsLog {
   id: string;
   user_id: string;

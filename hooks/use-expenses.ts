@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
-import { Transaction, Category, Account } from '../types/schema';
+import { Transaction, Category, Account, TransactionUpdateInput } from '../types/schema';
 import { Alert } from 'react-native';
 
 export function useExpenses() {
@@ -105,6 +105,32 @@ export function useExpenses() {
     }
   }
 
+  async function updateTransaction(id: string, updates: TransactionUpdateInput) {
+    try {
+      const { data, error } = await supabase
+        .from('transactions')
+        .update(updates)
+        .eq('id', id)
+        .select(`
+          *,
+          categories (id, name, icon, color),
+          accounts (id, bank_name, account_name)
+        `)
+        .single();
+
+      if (error) throw error;
+
+      setTransactions(prev =>
+        prev.map(t => (t.id === id ? (data as unknown as Transaction) : t))
+      );
+
+      return data as unknown as Transaction;
+    } catch (error: any) {
+      Alert.alert('Error updating transaction', error.message);
+      return null;
+    }
+  }
+
   // Helper to get total balance (sum of accounts)
   const totalBalance = accounts.reduce((sum, acc) => sum + (acc.balance || 0), 0);
 
@@ -117,8 +143,10 @@ export function useExpenses() {
     loading, 
     fetchData, 
     addTransaction, 
+    updateTransaction,
     deleteTransaction, 
     addExpense: addTransaction, 
+    updateExpense: updateTransaction,
     deleteExpense: deleteTransaction, 
     totalBalance
   };

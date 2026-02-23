@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { Alert, Dimensions, Pressable, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Dimensions, Modal, Pressable, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import Animated, {
   interpolate,
   runOnJS,
@@ -103,23 +103,31 @@ export const UserProfileSheet = ({ isVisible, onClose }: UserProfileSheetProps) 
   };
 
   return (
-    <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999 }}>
-      <Animated.View 
-        style={[{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'black' }, backdropStyle]}
-      >
-        <Pressable style={{ flex: 1 }} onPress={onClose} />
-      </Animated.View>
-
-      <Animated.View 
-        className="absolute bottom-0 left-0 right-0 bg-white rounded-t-[32px] shadow-2xl"
-        style={[{ height: SCREEN_HEIGHT * 0.8, zIndex: 10000 }, animatedStyle]}
-      >
-        <View className="w-12 h-1 bg-gray-300 rounded-full self-center mt-3 mb-4" />
-        
-        <ScrollView 
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: 180 }}
+    <Modal
+      visible={shouldRender}
+      transparent
+      animationType="none"
+      statusBarTranslucent
+      presentationStyle="overFullScreen"
+      onRequestClose={onClose}
+    >
+      <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 100000, elevation: 100000 }}>
+        <Animated.View
+          style={[{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'black' }, backdropStyle]}
         >
+          <Pressable style={{ flex: 1 }} onPress={onClose} />
+        </Animated.View>
+
+        <Animated.View
+          className="absolute bottom-0 left-0 right-0 bg-white rounded-t-[32px] shadow-2xl"
+          style={[{ height: SCREEN_HEIGHT * 0.8, zIndex: 100001, elevation: 100001 }, animatedStyle]}
+        >
+          <View className="w-12 h-1 bg-gray-300 rounded-full self-center mt-3 mb-4" />
+
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ paddingBottom: 180 }}
+          >
           {/* Profile Header */}
           <View className="items-center mb-6">
             <View className="w-20 h-20 rounded-full bg-primary items-center justify-center mb-3">
@@ -186,8 +194,9 @@ export const UserProfileSheet = ({ isVisible, onClose }: UserProfileSheetProps) 
               <Text className="text-danger font-bold text-[16px] ml-2">Sign Out</Text>
             </TouchableOpacity>
           </View>
-        </ScrollView>
-      </Animated.View>
-    </View>
+          </ScrollView>
+        </Animated.View>
+      </View>
+    </Modal>
   );
 };

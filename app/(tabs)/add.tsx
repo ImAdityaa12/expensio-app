@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import * as Haptics from 'expo-haptics';
 import React, { useEffect, useState } from 'react';
 import { Alert, ScrollView, Text, TouchableOpacity, View } from 'react-native';
@@ -21,6 +22,7 @@ const DEFAULT_CATEGORIES = [
 
 export default function AddExpenseScreen() {
   const insets = useSafeAreaInsets();
+  const tabBarHeight = useBottomTabBarHeight();
   const [amount, setAmount] = useState('0');
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [selectedAccount, setSelectedAccount] = useState<Account | null>(null);
@@ -247,7 +249,11 @@ export default function AddExpenseScreen() {
       <View className="flex-1" />
 
       {/* Keypad */}
-      <Animated.View entering={FadeInDown.delay(300)} className="bg-white rounded-t-[32px] pt-4 pb-8">
+      <Animated.View
+        entering={FadeInDown.delay(300)}
+        className="bg-white rounded-t-[32px] pt-4"
+        style={{ paddingBottom: tabBarHeight + Math.max(insets.bottom, 12) }}
+      >
         <NumericKeypad onPress={handleNumberPress} onDelete={handleDelete} />
         
         <View className="px-5 mt-4">

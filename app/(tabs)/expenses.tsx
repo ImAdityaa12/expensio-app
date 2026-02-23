@@ -9,7 +9,7 @@ import { useExpenses } from '../../hooks/use-expenses';
 import { Transaction } from '../../types/schema';
 
 export default function ExpensesScreen() {
-  const { transactions, categories, currencySymbol, fetchData, loading } = useExpenses();
+  const { transactions, categories, accounts, currencySymbol, fetchData, updateTransaction } = useExpenses();
   const insets = useSafeAreaInsets();
   
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -282,6 +282,10 @@ export default function ExpensesScreen() {
         onClose={() => setSelectedTransaction(null)}
         transaction={selectedTransaction}
         currencySymbol={currencySymbol}
+        categories={categories}
+        accounts={accounts}
+        onUpdateTransaction={updateTransaction}
+        onTransactionUpdated={(updated) => setSelectedTransaction(updated)}
       />
     </View>
   );

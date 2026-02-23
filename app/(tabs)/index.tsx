@@ -14,7 +14,7 @@ import { supabase } from '../../lib/supabase';
 import { Transaction } from '../../types/schema';
 
 export default function HomeScreen() {
-  const { transactions, loading, deleteTransaction, totalBalance, currencySymbol } = useExpenses();
+  const { transactions, categories, accounts, loading, deleteTransaction, updateTransaction, totalBalance, currencySymbol } = useExpenses();
   const [userName, setUserName] = useState('User');
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [showUserProfile, setShowUserProfile] = useState(false);
@@ -103,6 +103,10 @@ export default function HomeScreen() {
         onClose={() => setSelectedTransaction(null)}
         transaction={selectedTransaction}
         currencySymbol={currencySymbol}
+        categories={categories}
+        accounts={accounts}
+        onUpdateTransaction={updateTransaction}
+        onTransactionUpdated={(updated) => setSelectedTransaction(updated)}
       />
 
       <UserProfileSheet 
