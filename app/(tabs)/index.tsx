@@ -1,98 +1,118 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
-
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
+import { UserProfileSheet } from '@/components/UserProfileSheet';
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { AnalyticsChart } from '../../components/AnalyticsChart';
+import { BalanceCard } from '../../components/BalanceCard';
+import { ExpenseItem } from '../../components/ExpenseItem';
+import { TransactionDetailSheet } from '../../components/TransactionDetailSheet';
+import { useExpenses } from '../../hooks/use-expenses';
+import { supabase } from '../../lib/supabase';
+import { Transaction } from '../../types/schema';
 
 export default function HomeScreen() {
-  return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+  const { transactions, categories, accounts, loading, deleteTransaction, updateTransaction, totalBalance, currencySymbol } = useExpenses();
+  const [userName, setUserName] = useState('User');
+  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
+  const [showUserProfile, setShowUserProfile] = useState(false);
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user?.email) {
+        const emailName = user.email.split('@')[0];
+        setUserName(emailName.charAt(0).toUpperCase() + emailName.slice(1));
+      }
+    });
+  }, []);
+
+  return (
+    <View style={{ flex: 1, backgroundColor: '#F5F6FA', paddingTop: insets.top }}>
+      {/* Header */}
+      <View className="px-5 h-[60px] flex-row justify-between items-center">
+        <TouchableOpacity 
+          className="w-10 h-10 rounded-full bg-primary items-center justify-center shadow-sm"
+          onPress={() => setShowUserProfile(true)}
+          activeOpacity={0.7}
+        >
+          <Text className="text-white font-bold text-[16px]">
+            {userName.charAt(0).toUpperCase()}
+          </Text>
+        </TouchableOpacity>
+        
+        <View className="flex-1 items-center">
+          <Text className="text-text-dark font-bold text-[18px]">Home</Text>
+          <Text className="text-text-grey text-[11px]">Welcome, {userName}</Text>
+        </View>
+        
+        <TouchableOpacity 
+          className="w-10 h-10 items-center justify-center bg-white rounded-full shadow-sm"
+        >
+          <Ionicons name="notifications-outline" size={20} color="#1E1E1E" />
+        </TouchableOpacity>
+      </View>
+
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
+        {/* Balance Card */}
+        <Animated.View entering={FadeInDown.delay(100)} className="mt-6 px-5">
+          <BalanceCard amount={totalBalance} currencySymbol={currencySymbol} />
+        </Animated.View>
+
+        {/* Analytics Section */}
+        <Animated.View entering={FadeInDown.delay(200)} className="px-5 mt-6">
+           <AnalyticsChart currencySymbol={currencySymbol} />
+        </Animated.View>
+
+        {/* Transaction List */}
+        <Animated.View entering={FadeInDown.delay(300)} className="px-5 mt-6">
+          <View className="flex-row justify-between items-center mb-4">
+            <Text className="text-text-dark font-bold text-[16px]">Transactions</Text>
+            <TouchableOpacity onPress={() => router.push('/expenses')}>
+              <Text className="text-text-grey text-[14px]">View All</Text>
+            </TouchableOpacity>
+          </View>
+          
+          <View className="bg-white rounded-[24px] px-5 py-2 shadow-sm">
+            {loading ? (
+              <ActivityIndicator size="small" color="#5B2EFF" className="py-xl" />
+            ) : transactions.length === 0 ? (
+              <View className="py-xl items-center">
+                <Text className="text-text-grey">No transactions yet.</Text>
+              </View>
+            ) : (
+              transactions.slice(0, 5).map((item) => (
+                <ExpenseItem 
+                  key={item.id} 
+                  item={item} 
+                  onDelete={deleteTransaction}
+                  onPress={() => setSelectedTransaction(item)}
+                  currencySymbol={currencySymbol}
+                />
+              ))
+            )}
+          </View>
+        </Animated.View>
+      </ScrollView>
+
+      <TransactionDetailSheet 
+        isVisible={!!selectedTransaction} 
+        onClose={() => setSelectedTransaction(null)}
+        transaction={selectedTransaction}
+        currencySymbol={currencySymbol}
+        categories={categories}
+        accounts={accounts}
+        onUpdateTransaction={updateTransaction}
+        onTransactionUpdated={(updated) => setSelectedTransaction(updated)}
+      />
+
+      <UserProfileSheet 
+        isVisible={showUserProfile}
+        onClose={() => setShowUserProfile(false)}
+      />
+    </View>
   );
 }
-
-const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
-  },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
-  },
-});
