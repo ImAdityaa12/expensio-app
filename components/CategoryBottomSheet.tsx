@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
-import { Dimensions, Pressable, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { Dimensions, Modal, Pressable, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import Animated, {
   interpolate,
   runOnJS,
@@ -55,20 +55,28 @@ export const CategoryBottomSheet = ({ isVisible, onClose, onTransactionPress, ca
   if (!shouldRender || !localCategory) return null;
 
   return (
-    <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 900 }}>
-      <Animated.View 
-        style={[{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'black' }, backdropStyle]}
-      >
-        <Pressable style={{ flex: 1 }} onPress={onClose} />
-      </Animated.View>
+    <Modal
+      visible={shouldRender}
+      transparent
+      animationType="none"
+      statusBarTranslucent
+      presentationStyle="overFullScreen"
+      onRequestClose={onClose}
+    >
+      <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 100000, elevation: 100000 }}>
+        <Animated.View
+          style={[{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'black' }, backdropStyle]}
+        >
+          <Pressable style={{ flex: 1 }} onPress={onClose} />
+        </Animated.View>
 
-      <Animated.View 
-        className="absolute bottom-0 left-0 right-0 bg-primary-dark rounded-t-[32px] overflow-hidden shadow-2xl"
-        style={[{ height: SCREEN_HEIGHT * 0.85 }, animatedStyle]}
-      >
-        <View className="w-12 h-1 bg-white/20 rounded-full self-center mt-3 mb-6" />
-        
-        <View className="px-lg pb-lg">
+        <Animated.View
+          className="absolute bottom-0 left-0 right-0 bg-primary-dark rounded-t-[32px] overflow-hidden shadow-2xl"
+          style={[{ height: SCREEN_HEIGHT * 0.85, zIndex: 100001, elevation: 100001 }, animatedStyle]}
+        >
+          <View className="w-12 h-1 bg-white/20 rounded-full self-center mt-3 mb-6" />
+
+          <View className="px-lg pb-lg">
           <View className="items-center mb-6">
             <View className="w-16 h-16 rounded-full bg-white/10 items-center justify-center mb-3">
               <Ionicons name="pricetag" size={32} color="white" />
@@ -101,9 +109,9 @@ export const CategoryBottomSheet = ({ isVisible, onClose, onTransactionPress, ca
               <Text className="text-white/80 text-[12px]">Limit: {currencySymbol}{localCategory.budget.toLocaleString()}</Text>
             </View>
           </View>
-        </View>
+          </View>
 
-        <ScrollView className="flex-1 px-lg mt-md" showsVerticalScrollIndicator={false}>
+          <ScrollView className="flex-1 px-lg mt-md" showsVerticalScrollIndicator={false}>
           {expenses.filter(e => e.categories?.name === localCategory.name).map((item) => (
             <TouchableOpacity 
               key={item.id} 
@@ -125,9 +133,10 @@ export const CategoryBottomSheet = ({ isVisible, onClose, onTransactionPress, ca
               </View>
             </TouchableOpacity>
           ))}
-          <View className="h-20" />
-        </ScrollView>
-      </Animated.View>
-    </View>
+            <View className="h-20" />
+          </ScrollView>
+        </Animated.View>
+      </View>
+    </Modal>
   );
 };

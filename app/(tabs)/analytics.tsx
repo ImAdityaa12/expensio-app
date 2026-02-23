@@ -12,7 +12,7 @@ import { useExpenses } from '../../hooks/use-expenses';
 import { Transaction } from '../../types/schema';
 
 export default function AnalyticsScreen() {
-  const { transactions, currencySymbol, fetchData } = useExpenses();
+  const { transactions, categories, accounts, currencySymbol, fetchData, updateTransaction } = useExpenses();
   const insets = useSafeAreaInsets();
   const [selectedCategory, setSelectedCategory] = useState<{ name: string; total: number; budget: number } | null>(null);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
@@ -305,6 +305,10 @@ export default function AnalyticsScreen() {
         onClose={() => setSelectedTransaction(null)}
         transaction={selectedTransaction}
         currencySymbol={currencySymbol}
+        categories={categories}
+        accounts={accounts}
+        onUpdateTransaction={updateTransaction}
+        onTransactionUpdated={(updated) => setSelectedTransaction(updated)}
       />
     </View>
   );
