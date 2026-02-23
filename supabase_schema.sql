@@ -44,7 +44,8 @@ create table if not exists public.category_limits (
   period_type text check (period_type in ('DAILY', 'WEEKLY', 'MONTHLY')) not null,
   start_date date not null,
   end_date date,
-  created_at timestamp with time zone default now() not null
+  created_at timestamp with time zone default now() not null,
+  unique(user_id, category_id)
 );
 
 -- 5️⃣ Transactions Table ⭐ (Main Table - will eventually replace expenses)

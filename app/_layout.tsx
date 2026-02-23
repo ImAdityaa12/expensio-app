@@ -20,6 +20,7 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { registerBackgroundSyncTask, unregisterBackgroundSyncTask } from '@/services/background-sms-sync';
 import { startSmsListener, stopSmsListener } from '@/services/sms-listener';
 import { registerSmsHeadlessTask } from '../services/sms-headless-task';
+import { registerForPushNotificationsAsync } from '../services/notification-service';
 
 // Register headless task for background SMS processing
 if (Platform.OS === 'android') {
@@ -61,6 +62,9 @@ export default function RootLayout() {
     supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
     });
+
+    // Register for notifications
+    registerForPushNotificationsAsync();
   }, []);
 
   // Start SMS listener when user is logged in

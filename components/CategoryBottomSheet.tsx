@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
-import { Dimensions, Modal, Pressable, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { Dimensions, Modal, Pressable, ScrollView, Text, TouchableOpacity, View, TextInput, Alert } from 'react-native';
 import Animated, {
   interpolate,
   runOnJS,
@@ -17,28 +17,42 @@ interface CategoryBottomSheetProps {
   onClose: () => void;
   onTransactionPress: (transaction: Transaction) => void;
   category: {
+    id?: string;
     name: string;
     total: number;
     budget: number;
   } | null;
   expenses: Transaction[];
   currencySymbol?: string;
+  onSetLimit?: (limit: number) => Promise<void>;
 }
 
-export const CategoryBottomSheet = ({ isVisible, onClose, onTransactionPress, category, expenses, currencySymbol = '$' }: CategoryBottomSheetProps) => {
+export const CategoryBottomSheet = ({ 
+  isVisible, 
+  onClose, 
+  onTransactionPress, 
+  category, 
+  expenses, 
+  currencySymbol = '$',
+  onSetLimit
+}: CategoryBottomSheetProps) => {
   const translateY = useSharedValue(SCREEN_HEIGHT);
   const [localCategory, setLocalCategory] = useState(category);
   const [shouldRender, setShouldRender] = useState(isVisible);
+  const [isEditingLimit, setIsEditingLimit] = useState(false);
+  const [newLimit, setNewLimit] = useState('');
 
   useEffect(() => {
     if (isVisible) {
       setLocalCategory(category);
+      setNewLimit(category?.budget.toString() || '');
       setShouldRender(true);
       translateY.value = withTiming(SCREEN_HEIGHT * 0.15, { duration: 300 });
     } else {
       translateY.value = withTiming(SCREEN_HEIGHT, { duration: 250 }, (finished) => {
         if (finished) {
           runOnJS(setShouldRender)(false);
+          runOnJS(setIsEditingLimit)(false);
         }
       });
     }
@@ -51,6 +65,22 @@ export const CategoryBottomSheet = ({ isVisible, onClose, onTransactionPress, ca
   const backdropStyle = useAnimatedStyle(() => ({
     opacity: interpolate(translateY.value, [SCREEN_HEIGHT, SCREEN_HEIGHT * 0.15], [0, 0.5]),
   }));
+
+  const handleSaveLimit = async () => {
+    const limit = parseFloat(newLimit);
+    if (isNaN(limit) || limit <= 0) {
+      Alert.alert('Invalid limit', 'Please enter a valid amount.');
+      return;
+    }
+    
+    if (onSetLimit) {
+      await onSetLimit(limit);
+      setIsEditingLimit(false);
+      if (localCategory) {
+        setLocalCategory({ ...localCategory, budget: limit });
+      }
+    }
+  };
 
   if (!shouldRender || !localCategory) return null;
 
@@ -86,28 +116,62 @@ export const CategoryBottomSheet = ({ isVisible, onClose, onTransactionPress, ca
 
           <View className="bg-white/10 p-5 rounded-2xl mb-4">
             <View className="flex-row justify-between items-end mb-2">
-              <Text className="text-white/80 text-[14px]">Total Spent</Text>
-              <Text className="text-white font-bold text-[20px]">
-                {currencySymbol}{localCategory.total.toLocaleString(undefined, { minimumFractionDigits: 0 })}
-              </Text>
+              <View>
+                <Text className="text-white/80 text-[14px]">Total Spent</Text>
+                <Text className="text-white font-bold text-[20px]">
+                  {currencySymbol}{localCategory.total.toLocaleString(undefined, { minimumFractionDigits: 0 })}
+                </Text>
+              </View>
+              
+              {!isEditingLimit ? (
+                <TouchableOpacity onPress={() => setIsEditingLimit(true)} className="flex-row items-center px-3 py-1 bg-white/10 rounded-full">
+                  <Ionicons name="create-outline" size={14} color="white" className="mr-1" />
+                  <Text className="text-white/80 text-[12px]">Set Limit</Text>
+                </TouchableOpacity>
+              ) : null}
             </View>
 
-            <View className="h-2 bg-black/20 rounded-full overflow-hidden mb-2">
-               <View 
-                 style={{ width: `${Math.min((localCategory.total / localCategory.budget) * 100, 100)}%` }} 
-                 className={`h-full rounded-full ${
-                   localCategory.total > localCategory.budget ? 'bg-red-400' : 
-                   localCategory.total > localCategory.budget * 0.8 ? 'bg-orange-400' : 'bg-green-400'
-                 }`} 
-               />
-            </View>
+            {isEditingLimit ? (
+              <View className="mt-2 flex-row items-center">
+                <View className="flex-1 flex-row items-center bg-white/5 rounded-xl px-3 mr-2 border border-white/20">
+                  <Text className="text-white/60 mr-1">{currencySymbol}</Text>
+                  <TextInput
+                    value={newLimit}
+                    onChangeText={setNewLimit}
+                    keyboardType="numeric"
+                    className="flex-1 h-10 text-white font-semibold"
+                    placeholder="Enter limit"
+                    placeholderTextColor="rgba(255,255,255,0.3)"
+                    autoFocus
+                  />
+                </View>
+                <TouchableOpacity onPress={handleSaveLimit} className="bg-primary px-4 h-10 rounded-xl justify-center items-center">
+                  <Text className="text-white font-bold">Save</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => setIsEditingLimit(false)} className="ml-2 w-10 h-10 items-center justify-center">
+                  <Ionicons name="close" size={24} color="white" />
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <>
+                <View className="h-2 bg-black/20 rounded-full overflow-hidden mb-2 mt-2">
+                   <View 
+                     style={{ width: `${Math.min((localCategory.total / localCategory.budget) * 100, 100)}%` }} 
+                     className={`h-full rounded-full ${
+                       localCategory.total > localCategory.budget ? 'bg-red-400' : 
+                       localCategory.total > localCategory.budget * 0.8 ? 'bg-orange-400' : 'bg-green-400'
+                     }`} 
+                   />
+                </View>
 
-            <View className="flex-row justify-between">
-              <Text className="text-white/60 text-[12px]">
-                {Math.round((localCategory.total / localCategory.budget) * 100)}% of limit
-              </Text>
-              <Text className="text-white/80 text-[12px]">Limit: {currencySymbol}{localCategory.budget.toLocaleString()}</Text>
-            </View>
+                <View className="flex-row justify-between">
+                  <Text className="text-white/60 text-[12px]">
+                    {Math.round((localCategory.total / localCategory.budget) * 100)}% of limit
+                  </Text>
+                  <Text className="text-white/80 text-[12px]">Limit: {currencySymbol}{localCategory.budget.toLocaleString()}</Text>
+                </View>
+              </>
+            )}
           </View>
           </View>
 
