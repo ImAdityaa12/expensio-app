@@ -174,24 +174,15 @@ create policy "Users can delete their own categories"
 
 -- Category limits policies
 drop policy if exists "Users can view their own category limits" on public.category_limits;
-create policy "Users can view their own category limits"
-  on public.category_limits for select
-  using ( auth.uid() = user_id );
-
 drop policy if exists "Users can insert their own category limits" on public.category_limits;
-create policy "Users can insert their own category limits"
-  on public.category_limits for insert
-  with check ( auth.uid() = user_id );
-
 drop policy if exists "Users can update their own category limits" on public.category_limits;
-create policy "Users can update their own category limits"
-  on public.category_limits for update
-  using ( auth.uid() = user_id );
-
 drop policy if exists "Users can delete their own category limits" on public.category_limits;
-create policy "Users can delete their own category limits"
-  on public.category_limits for delete
-  using ( auth.uid() = user_id );
+
+create policy "Users can manage their own category limits"
+  on public.category_limits
+  for all
+  using ( auth.uid() = user_id )
+  with check ( auth.uid() = user_id );
 
 -- Transactions policies
 drop policy if exists "Users can view their own transactions" on public.transactions;
