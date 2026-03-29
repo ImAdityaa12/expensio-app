@@ -12,9 +12,9 @@ import { useExpenses } from '../../hooks/use-expenses';
 import { Transaction } from '../../types/schema';
 
 export default function AnalyticsScreen() {
-  const { transactions, categories, accounts, currencySymbol, fetchData, updateTransaction } = useExpenses();
+  const { transactions, categories, accounts, categoryLimits, currencySymbol, fetchData, updateTransaction, setCategoryLimit } = useExpenses();
   const insets = useSafeAreaInsets();
-  const [selectedCategory, setSelectedCategory] = useState<{ name: string; total: number; budget: number } | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<{ id: string; name: string; total: number; budget: number } | null>(null);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [monthlyBudget, setMonthlyBudget] = useState(12000);
@@ -75,26 +75,50 @@ export default function AnalyticsScreen() {
   const remainingBudget = useMemo(() => monthlyBudget - totalSpent, [monthlyBudget, totalSpent]);
   const progress = Math.min(totalSpent / monthlyBudget, 1);
 
-  const categoryTotals = useMemo(() => {
-    const totals: { [key: string]: number } = {};
-    currentMonthTransactions.filter(e => e.type === 'DEBIT').forEach((e) => {
-      const cat = e.categories?.name || 'Others';
-      totals[cat] = (totals[cat] || 0) + e.amount;
+  const categoryData = useMemo(() => {
+    const totals: { [key: string]: { amount: number, id: string } } = {};
+    
+    // Initialize totals for all categories the user has
+    categories.forEach(cat => {
+      totals[cat.name] = { amount: 0, id: cat.id };
     });
-    return Object.entries(totals).sort((a, b) => b[1] - a[1]);
-  }, [currentMonthTransactions]);
+
+    currentMonthTransactions.filter(e => e.type === 'DEBIT').forEach((e) => {
+      const catName = e.categories?.name || 'Others';
+      if (totals[catName]) {
+        totals[catName].amount += e.amount;
+      } else {
+        totals[catName] = { amount: e.amount, id: e.category_id || '' };
+      }
+    });
+
+    return Object.entries(totals)
+      .map(([name, data]) => {
+        const limit = categoryLimits.find(l => l.category_id === data.id);
+        return {
+          id: data.id,
+          name,
+          amount: data.amount,
+          budget: limit?.limit_amount || 0
+        };
+      })
+      .sort((a, b) => b.amount - a.amount);
+  }, [currentMonthTransactions, categories, categoryLimits]);
 
   const chartData = useMemo(() => {
     const colors = ['#4B2E83', '#6C4AB6', '#F48C57', '#10B981', '#EF4444', '#8A8A8A'];
     if (totalSpent === 0) return [];
     
-    return categoryTotals.slice(0, 5).map(([name, value], index) => ({
-      name,
-      value: (value / totalSpent) * 100,
-      color: colors[index % colors.length],
-      amount: value
-    }));
-  }, [categoryTotals, totalSpent]);
+    return categoryData
+      .filter(c => c.amount > 0)
+      .slice(0, 5)
+      .map((item, index) => ({
+        name: item.name,
+        value: (item.amount / totalSpent) * 100,
+        color: colors[index % colors.length],
+        amount: item.amount
+      }));
+  }, [categoryData, totalSpent]);
 
   return (
     <View style={{ flex: 1, backgroundColor: '#F5F6FA', paddingTop: insets.top }}>
@@ -249,37 +273,55 @@ export default function AnalyticsScreen() {
         {/* Distribution List */}
         <Animated.View entering={FadeInDown.delay(350)}>
           <Text className="text-text-dark font-bold text-base mb-3">Category Distribution</Text>
-          {chartData.length === 0 ? (
+          {categoryData.length === 0 ? (
             <View className="bg-white p-6 rounded-2xl shadow-sm items-center">
               <Ionicons name="pie-chart-outline" size={48} color="#CCC" />
               <Text className="text-text-grey text-[14px] mt-3">No expenses to show</Text>
               <Text className="text-text-grey text-[12px] mt-1">Add some expenses to see distribution</Text>
             </View>
           ) : (
-            chartData.map((item) => (
+            categoryData.map((item) => (
               <TouchableOpacity 
                 key={item.name} 
-                className="bg-white rounded-2xl shadow-sm mb-3 flex-row items-center justify-between" 
+                className="bg-white rounded-2xl shadow-sm mb-3" 
                 style={{ padding: 16 }}
-                onPress={() => setSelectedCategory({ name: item.name, total: item.amount, budget: monthlyBudget / chartData.length })}
+                onPress={() => setSelectedCategory({ id: item.id, name: item.name, total: item.amount, budget: item.budget || 5000 })}
                 activeOpacity={0.7}
               >
-                <View className="flex-row items-center">
-                  <View 
-                    className="w-10 h-10 rounded-full items-center justify-center mr-3"
-                    style={{ backgroundColor: item.color + '15' }}
-                  >
-                    <Ionicons name={getCategoryIcon(item.name) as any} size={18} color={item.color} />
+                <View className="flex-row items-center justify-between mb-2">
+                  <View className="flex-row items-center">
+                    <View 
+                      className="w-10 h-10 rounded-full items-center justify-center mr-3"
+                      style={{ backgroundColor: '#5B2EFF15' }}
+                    >
+                      <Ionicons name={getCategoryIcon(item.name) as any} size={18} color="#5B2EFF" />
+                    </View>
+                    <View>
+                      <Text className="text-text-dark font-semibold capitalize">{item.name}</Text>
+                      <Text className="text-text-grey text-[11px]">
+                        {item.budget > 0 ? `${Math.round((item.amount / item.budget) * 100)}% of limit` : 'No limit set'}
+                      </Text>
+                    </View>
                   </View>
-                  <View>
-                    <Text className="text-text-dark font-semibold capitalize">{item.name}</Text>
-                    <Text className="text-text-grey text-[11px]">{item.value.toFixed(1)}% of total</Text>
+                  <View className="items-end">
+                    <Text className="text-text-dark font-bold">{currencySymbol}{item.amount.toLocaleString()}</Text>
+                    {item.budget > 0 && (
+                      <Text className="text-text-grey text-[10px]">Limit: {currencySymbol}{item.budget.toLocaleString()}</Text>
+                    )}
                   </View>
                 </View>
-                <View className="flex-row items-center">
-                  <Text className="text-text-dark font-bold mr-2">{currencySymbol}{item.amount.toLocaleString()}</Text>
-                  <Ionicons name="chevron-forward" size={16} color="#999" />
-                </View>
+                
+                {item.budget > 0 && (
+                  <View className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                    <View 
+                      style={{ 
+                        width: `${Math.min((item.amount / item.budget) * 100, 100)}%`,
+                        backgroundColor: (item.amount / item.budget) > 1 ? '#EF4444' : (item.amount / item.budget) > 0.8 ? '#F97316' : '#5B2EFF'
+                      }} 
+                      className="h-full rounded-full"
+                    />
+                  </View>
+                )}
               </TouchableOpacity>
             ))
           )}
@@ -298,6 +340,12 @@ export default function AnalyticsScreen() {
         category={selectedCategory}
         expenses={currentMonthTransactions}
         currencySymbol={currencySymbol}
+        onSetLimit={async (limit) => {
+          if (selectedCategory?.id) {
+            await setCategoryLimit(selectedCategory.id, limit);
+            fetchData();
+          }
+        }}
       />
 
       <TransactionDetailSheet 

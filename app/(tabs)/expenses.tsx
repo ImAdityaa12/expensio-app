@@ -9,7 +9,7 @@ import { useExpenses } from '../../hooks/use-expenses';
 import { Transaction } from '../../types/schema';
 
 export default function ExpensesScreen() {
-  const { transactions, categories, accounts, currencySymbol, fetchData, updateTransaction } = useExpenses();
+  const { transactions, categories, accounts, categoryLimits, currencySymbol, fetchData, updateTransaction, setCategoryLimit } = useExpenses();
   const insets = useSafeAreaInsets();
   
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -107,19 +107,37 @@ export default function ExpensesScreen() {
       if (total > 0) {
         console.log('📊 Category with data:', cat.name, 'ID:', cat.id, 'Total:', total, 'Transactions:', categoryExpenses.length);
       }
+
+      // Calculate dynamic budget based on actual limits
+      const limit = categoryLimits.find(l => l.category_id === cat.id);
+      let budget = 500; // Default daily fallback
+
+      if (limit) {
+        if (limit.period_type === 'DAILY') {
+          budget = limit.limit_amount;
+        } else if (limit.period_type === 'WEEKLY') {
+          budget = limit.limit_amount / 7;
+        } else if (limit.period_type === 'MONTHLY') {
+          // Get days in current month
+          const date = new Date();
+          const daysInMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+          budget = limit.limit_amount / daysInMonth;
+        }
+      }
       
       return { 
+        id: cat.id,
         name: cat.name, 
         icon: cat.icon || 'apps',
         color: cat.color || '#5B2EFF',
-        budget: 500, // Daily budget per category (can be made dynamic)
+        budget, 
         total 
       };
     }).filter(c => c.total > 0); // Only show categories with expenses
     
     console.log('📊 Final categories with data:', categoriesWithData.map(c => `${c.name}(${c.total})`).join(', '));
     return categoriesWithData;
-  }, [filteredExpenses, categories, selectedDate]);
+  }, [filteredExpenses, categories, categoryLimits, selectedDate]);
 
   const handleCategoryPress = (cat: any) => {
     setSelectedCategory(cat);
@@ -224,9 +242,15 @@ export default function ExpensesScreen() {
         ) : (
           categoryData.map((cat) => (
             <TouchableOpacity 
-              key={cat.name} 
+              key={cat.id} 
               activeOpacity={0.7}
-              onPress={() => handleCategoryPress(cat)}
+              onPress={() => {
+                // Get original monthly budget for the bottom sheet
+                const limit = categoryLimits.find(l => l.category_id === cat.id);
+                const fullBudget = limit?.limit_amount || 5000; // Default monthly fallback
+                setSelectedCategory({ ...cat, budget: fullBudget });
+                setIsDrawerVisible(true);
+              }}
               className="bg-white rounded-2xl shadow-sm mb-3"
               style={{ padding: 16 }}
             >
@@ -256,10 +280,10 @@ export default function ExpensesScreen() {
               </View>
               <View className="flex-row justify-between mt-1">
                 <Text className="text-text-grey text-[10px]">
-                  Daily limit: {currencySymbol}{cat.budget}
+                  Daily limit: {currencySymbol}{Math.round(cat.budget)}
                 </Text>
                 <Text className="text-text-grey text-[10px]">
-                  {cat.total > cat.budget ? 'Over limit' : `${currencySymbol}${(cat.budget - cat.total).toLocaleString()} left`}
+                  {cat.total > cat.budget ? 'Over limit' : `${currencySymbol}${Math.max(0, Math.round(cat.budget - cat.total)).toLocaleString()} left`}
                 </Text>
               </View>
             </TouchableOpacity>
@@ -271,10 +295,19 @@ export default function ExpensesScreen() {
       <CategoryBottomSheet 
         isVisible={isDrawerVisible} 
         onClose={() => setIsDrawerVisible(false)} 
-        onTransactionPress={(transaction) => setSelectedTransaction(transaction)}
+        onTransactionPress={(transaction) => {
+          setIsDrawerVisible(false);
+          setSelectedTransaction(transaction);
+        }}
         category={selectedCategory}
         expenses={filteredExpenses} // Only show expenses for the selected date
         currencySymbol={currencySymbol}
+        onSetLimit={async (limit) => {
+          if (selectedCategory?.id) {
+            await setCategoryLimit(selectedCategory.id, limit);
+            fetchData();
+          }
+        }}
       />
 
       <TransactionDetailSheet 
